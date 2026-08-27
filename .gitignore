@@ -1,0 +1,42 @@
+# Build output
+target/
+build/
+dist/
+out/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# Node
+node_modules/
+.next/
+coverage/
+*.tsbuildinfo
+
+# Terraform: state and variables never belong in Git
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+*.tfplan
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+id_rsa
+id_ed25519
+
+# Tooling caches
+__pycache__/
+.venv/
+.pytest_cache/
+.idea/
+.vscode/
+.DS_Store

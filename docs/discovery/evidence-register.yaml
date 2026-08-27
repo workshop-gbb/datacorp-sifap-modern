@@ -1,0 +1,129 @@
+# Evidence register for the SIFAP modernization.
+#
+# Constitution P1: every requirement resolves to real legacy code at a pinned SHA.
+# Constitution P3: intent that nobody has confirmed becomes a CLAR gate, never a guess.
+#
+# Evidence URI form:
+#   github://workshop-gbb/datacorp-sifap-legacy@<sha>/<path>#L<start>-L<end>
+
+version: 1
+
+legacy:
+  repository: workshop-gbb/datacorp-sifap-legacy
+  commit: b87992324dda18bdfc86e6507c3f99b86b99e35d
+  corpus_root: 01-archaeology/legacy-sifap
+  note: >-
+    The commit is pinned. Re-pin it deliberately and re-check every citation when
+    the legacy repository moves, because line numbers are part of the evidence.
+
+evidence:
+  - id: EV-001
+    subject: CPF validation is centralized in one subprogram
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L1-L27
+    observation: >-
+      The header declares SUBVALCP the single source of truth for CPF in SIFAP and
+      states it neither reads input nor writes output, returning everything through
+      the PDAVALID parameter area.
+    supports: [REQ-001, REQ-002, REQ-003, REQ-004, REQ-005]
+
+  - id: EV-002
+    subject: CPF return codes are distinct per failure cause
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L50-L82
+    observation: >-
+      Five outcomes are distinguished by code, not by a single boolean: 1004 wrong
+      document type, 1002 absent CPF, 1005 non-numeric CPF, 1001 failed check digit,
+      0 valid. An unexpected Natural error returns 9999.
+    supports: [REQ-001, REQ-002, REQ-003, REQ-004, REQ-005, REQ-006]
+
+  - id: EV-003
+    subject: An all-zeros CPF is treated as absent, not as invalid
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L56-L60
+    observation: >-
+      Blank and '00000000000' share return code 1002 (CPF NOT PROVIDED). A naive
+      rewrite that rejected all-zeros as a check-digit failure would change the code
+      a caller sees.
+    supports: [REQ-002]
+
+  - id: EV-004
+    subject: Social program registration rejects duplicates before storing
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L109-L120
+    observation: >-
+      The program searches SOCPROG by program code and refuses the insert when a
+      record already exists.
+    supports: [REQ-010]
+
+  - id: EV-005
+    subject: The stored base amount is derived, not the amount the operator typed
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L124-L125
+    observation: >-
+      The persisted amount is AMT-BASE multiplied by a factor derived from an
+      unexplained constant. Reproducing registration without this step would store a
+      different amount than the legacy system.
+    supports: [REQ-011]
+    blocked_by: [CLAR-001]
+
+  - id: EV-006
+    subject: A newly registered program is always active
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L134-L134
+    observation: >-
+      Status is hard-coded to 'A' on insert. The operator is never asked for it.
+    supports: [REQ-012]
+
+  - id: EV-007
+    subject: Registration writes an audit record before committing
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L141-L147
+    observation: >-
+      Action 'IN' against entity 'PROG' is written through the shared audit copycode,
+      and only then is the transaction committed. The audit trail cites IN-TCU 63/2010.
+    supports: [REQ-013]
+
+clarifications:
+  - id: CLAR-001
+    question: >-
+      What is the origin and legal basis of the constant 0.347215 used to derive the
+      program correction factor, and does it still apply?
+    evidence: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L124-L125
+    impact: >-
+      Blocks REQ-011. Every registered program amount depends on it, so guessing the
+      value would corrupt every downstream payment calculation.
+    hypothesis: unconfirmed
+    owner: benefits policy area
+    status: open
+
+  - id: CLAR-002
+    question: >-
+      Which Adabas file holds the social program table? The program header says file
+      155 and an inline comment says file 151.
+    evidence: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L10-L10
+    also_see: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L109-L109
+    impact: >-
+      Affects data migration mapping for the program table. Does not block the
+      validation requirements.
+    hypothesis: unconfirmed
+    owner: legacy database administration
+    status: open
+
+  - id: CLAR-003
+    question: >-
+      Is the narrowing from the P9.2 input field to the P7.2 stored field intentional,
+      and what happens to a program amount that exceeds the stored precision?
+    evidence: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L19-L19
+    also_see: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L49-L49
+    impact: >-
+      Determines whether the modern schema must reproduce a truncation or reject the
+      value. Blocks the persistence decision for REQ-011.
+    hypothesis: unconfirmed
+    owner: benefits policy area
+    status: open
+
+  - id: CLAR-004
+    question: >-
+      What should the query path return when no program matches? The legacy code
+      documents this as non-standard with ticket 3312/2004 still open.
+    evidence: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CADPROG.NSP#L166-L171
+    impact: >-
+      Affects the not-found contract of the program read endpoint. The legacy behavior
+      is acknowledged by its own authors as unfinished, so copying it may be wrong.
+    hypothesis: unconfirmed
+    owner: benefits policy area
+    status: open
