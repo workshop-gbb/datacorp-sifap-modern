@@ -77,6 +77,51 @@ evidence:
       and only then is the transaction committed. The audit trail cites IN-TCU 63/2010.
     supports: [REQ-013]
 
+  - id: EV-008
+    subject: The claim of a single CPF authority is contradicted by the code itself
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CCVALCPF.NSC#L32-L37
+    observation: >-
+      SUBVALCP declares itself the single source of truth for CPF, but the shared
+      copycode carries an explicit warning that inline copies exist in other modules
+      with different behavior, that they were never replaced, and that they are not
+      equivalent. Ticket 6620/2011 is recorded as still open.
+    also_see: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L9-L9
+    supports: [REQ-001]
+    blocked_by: [CLAR-005]
+
+  - id: EV-009
+    subject: The shared routine rejects a CPF whose digits are all equal
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CCVALCPF.NSC#L79-L90
+    observation: >-
+      Added in 2005. The rejection is unconditional here, with no exempted range.
+      Check digits are then derived with weights 10..2 and 11..2, taking a true
+      remainder through DIVIDE ... REMAINDER, mapping a remainder below 2 to 0.
+    supports: [REQ-015]
+    blocked_by: [CLAR-005]
+
+  - id: EV-010
+    subject: A second validator treats an all-zeros CPF as valid
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/VALBENEF.NSN#L237-L244
+    observation: >-
+      VALBENEF carries its own inline validator. It rejects all-equal digits, except
+      when the first three digits are zero, which it returns as valid and comments as
+      a government test value. The same input is classified as not provided by
+      SUBVALCP and as invalid by the shared copycode.
+    supports: [REQ-002, REQ-015]
+    blocked_by: [CLAR-005]
+
+  - id: EV-011
+    subject: A third validator omits the all-equal check entirely
+    uri: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/VALDOCS.NSP#L137-L204
+    observation: >-
+      VALDOCS also validates CPF inline and has no all-equal check at all, so a
+      repeated-digit CPF is accepted whenever its check digits happen to agree. It
+      also derives the remainder arithmetically rather than through DIVIDE ...
+      REMAINDER, which is a second axis of divergence.
+    also_see: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/VALDOCS.NSP#L178-L178
+    supports: [REQ-001, REQ-015]
+    blocked_by: [CLAR-005]
+
 clarifications:
   - id: CLAR-001
     question: >-
@@ -126,4 +171,32 @@ clarifications:
       is acknowledged by its own authors as unfinished, so copying it may be wrong.
     hypothesis: unconfirmed
     owner: benefits policy area
+    status: open
+
+  - id: CLAR-005
+    question: >-
+      Which CPF validation semantics is authoritative? The legacy system contains
+      three implementations that disagree, so the same CPF can be accepted by one
+      module and rejected by another.
+    evidence: github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CCVALCPF.NSC#L32-L37
+    variants:
+      - module: CCVALCPF via SUBVALCP
+        all_equal_digits: rejected unconditionally
+        remainder: DIVIDE ... REMAINDER
+        all_zeros_result: reported as not provided before the routine is reached
+      - module: VALBENEF inline
+        all_equal_digits: rejected, except when the first three digits are zero
+        remainder: computed arithmetically
+        all_zeros_result: valid
+      - module: VALDOCS inline
+        all_equal_digits: not checked
+        remainder: computed arithmetically
+        all_zeros_result: valid when the check digits agree
+    impact: >-
+      Blocks REQ-001, REQ-002 and REQ-015. Consolidating on one implementation is the
+      right modern design, but it necessarily changes behavior for whichever callers
+      relied on a different variant. Choosing silently would migrate a beneficiary
+      population under rules nobody approved.
+    hypothesis: unconfirmed
+    owner: benefits policy area with legal review
     status: open

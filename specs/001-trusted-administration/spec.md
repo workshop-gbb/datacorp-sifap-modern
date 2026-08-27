@@ -7,7 +7,7 @@ The first executable increment. It establishes the two things every later featur
 | **Status** | draft |
 | **Legacy commit** | `b87992324dda18bdfc86e6507c3f99b86b99e35d` |
 | **Evidence register** | [`docs/discovery/evidence-register.yaml`](../../docs/discovery/evidence-register.yaml) |
-| **Blocked requirements** | REQ-011 (CLAR-001, CLAR-003) |
+| **Blocked requirements** | REQ-001, REQ-002, REQ-015 (CLAR-005) and REQ-011 (CLAR-001, CLAR-003) |
 
 ---
 
@@ -21,6 +21,8 @@ The first executable increment. It establishes the two things every later featur
 
 Every other SIFAP behavior calls document validation, and every administrative action is expected to leave an audit record. Building these first means later features inherit a proven validation contract instead of re-implementing one.
 
+Investigation showed that is precisely what the legacy system failed to do. Three CPF validators coexist and disagree, so the same CPF can be accepted by one module and rejected by another. Consolidating them is the point of this slice, but which semantics wins is a policy decision, not an implementation detail. CLAR-005 holds that decision open.
+
 ---
 
 ## Requirements
@@ -32,12 +34,14 @@ Requirements use EARS notation. Every requirement carries a `source_legacy:` lin
 **REQ-001** — The document validation service shall expose CPF validation as the single authority for CPF correctness, with no user interface and no direct persistence.
 
 - `source_legacy:` `github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L1-L27`
+- **Blocked by** CLAR-005. The legacy subprogram claims to be the single source of truth, but the shared copycode records that non-equivalent inline copies exist and were never replaced, and two modules do carry their own. Consolidating is correct; choosing which semantics to consolidate on is not this specification to decide.
 - **Acceptance.** Given any caller, when it needs to establish CPF correctness, then it calls this service rather than implementing its own check.
 
 **REQ-002** — If the submitted CPF is absent, blank, or consists entirely of zeros, then the document validation service shall report outcome `CPF_NOT_PROVIDED`.
 
 - `source_legacy:` `github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/SUBVALCP.NSN#L56-L60`
-- **Acceptance.** Given the CPF `00000000000`, when it is validated, then the outcome is `CPF_NOT_PROVIDED` and **not** a check-digit failure. The all-zeros case is deliberately classified as absent, matching legacy return code 1002.
+- **Blocked by** CLAR-005. An all-zeros CPF is classified three different ways across the legacy system: not provided by this subprogram, invalid by the shared copycode, and explicitly **valid** by the beneficiary validator, which exempts it as a government test value.
+- **Acceptance.** Given the CPF `00000000000`, when it is validated, then the outcome is the one CLAR-005 selects, and the selected behavior is recorded in an ADR because at least one legacy caller changes behavior either way.
 
 **REQ-003** — If the submitted CPF contains any non-numeric character, then the document validation service shall report outcome `CPF_NOT_NUMERIC`.
 
@@ -63,6 +67,12 @@ Requirements use EARS notation. Every requirement carries a `source_legacy:` lin
 
 - `source_legacy:` `[GREENFIELD]` The legacy subprogram writes no output at all, so it has no logging behavior to preserve. This requirement exists because the modern system does log, and constitution principle P6 makes identifier masking a default.
 - **Acceptance.** Given any validation outcome, when logs and traces are inspected, then no CPF value appears.
+
+**REQ-015** — If every digit of the submitted CPF is the same, then the document validation service shall report outcome `CPF_CHECK_DIGIT_INVALID`.
+
+- `source_legacy:` `github://workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d/01-archaeology/legacy-sifap/natural-programs/CCVALCPF.NSC#L79-L90`
+- **Blocked by** CLAR-005. The shared routine rejects repeated digits unconditionally, the beneficiary validator exempts values whose first three digits are zero, and the document validator omits the check entirely, which accepts `11111111111` because its check digits happen to agree.
+- **Acceptance.** Given a CPF of eleven identical digits, when it is validated, then the outcome matches the variant CLAR-005 selects. Until then this requirement is not implemented.
 
 ### Social program registration
 
@@ -110,8 +120,8 @@ Requirements use EARS notation. Every requirement carries a `source_legacy:` lin
 
 | Requirement | Evidence | Status |
 |---|---|---|
-| REQ-001 | EV-001 | ready |
-| REQ-002 | EV-002, EV-003 | ready |
+| REQ-001 | EV-001, EV-008, EV-011 | **blocked** by CLAR-005 |
+| REQ-002 | EV-002, EV-003, EV-010 | **blocked** by CLAR-005 |
 | REQ-003 | EV-002 | ready |
 | REQ-004 | EV-002 | ready |
 | REQ-005 | EV-002 | ready |
@@ -124,11 +134,13 @@ Requirements use EARS notation. Every requirement carries a `source_legacy:` lin
 | REQ-012 | EV-006 | ready |
 | REQ-013 | EV-007 | ready |
 | REQ-014 | `[GREENFIELD]` | ready |
+| REQ-015 | EV-009, EV-010, EV-011 | **blocked** by CLAR-005 |
 
 ## Definition of done
 
 - [ ] Every ready requirement has a characterization test naming its `REQ-NNN`.
 - [ ] Expected values come from the legacy code, never from the modern implementation output.
 - [ ] REQ-011 remains unimplemented while CLAR-001 or CLAR-003 is open.
+- [ ] REQ-001, REQ-002 and REQ-015 remain unimplemented while CLAR-005 is open, and the chosen CPF semantics is recorded in an ADR before any of them ships.
 - [ ] No CPF appears in any log or trace.
 - [ ] The slice runs end to end: schema, API, user interface and tests.

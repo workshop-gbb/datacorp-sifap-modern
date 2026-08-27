@@ -51,7 +51,10 @@ github://workshop-gbb/datacorp-sifap-legacy@<40-char-sha>/<path>#L<start>-L<end>
 
 A branch name is not evidence, because branches move and line numbers shift under them. The validator rejects any citation that is not pinned, that names the wrong repository, or that names a commit other than the one the evidence register pins.
 
-When the legacy code says something nobody can explain, that becomes a gate rather than a guess. For example, program registration multiplies the operator amount by a factor built from the constant `0.347215`, whose origin is unrecorded. Registration amounts are therefore **blocked** until the benefits policy area confirms it, because guessing would corrupt every downstream payment.
+When the legacy code says something nobody can explain, that becomes a gate rather than a guess. Two examples found so far:
+
+- Program registration multiplies the operator amount by a factor built from the constant `0.347215`, whose origin is unrecorded. Registration amounts are **blocked** until the benefits policy area confirms it, because guessing would corrupt every downstream payment.
+- **Three CPF validators coexist in the legacy system and disagree.** The shared routine rejects a CPF of repeated digits; the beneficiary validator exempts values starting with `000` as a government test and returns them valid; the document validator omits the check entirely. The same CPF is therefore accepted by one module and rejected by another. Consolidating them is the point of the first increment, but which semantics wins is a policy decision, so it is **blocked** pending legal review.
 
 ---
 
@@ -61,10 +64,11 @@ When the legacy code says something nobody can explain, that becomes a gate rath
 
 | Measure | Value |
 |---|---|
-| Requirements | 14 |
-| Backed by legacy evidence | 12 |
+| Requirements | 15 |
+| Backed by legacy evidence | 13 |
 | Justified as greenfield | 2 |
-| Blocked by open gates | 1 |
+| Blocked by open gates | 4 |
+| Open clarification gates | 5 |
 
 Document validation comes first because every other SIFAP behavior calls it. Building it once, correctly, means later features inherit a proven contract instead of re-implementing one.
 
