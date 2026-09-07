@@ -41,7 +41,7 @@ eligibility, reconcile production financial systems, or execute payments.
 - The VM managed identity has only `Key Vault Secrets User` on that vault.
 - `sifap-modern.service` fetches protected runtime configuration after a reboot.
 - PostgreSQL and TLS data are persisted in Docker volumes.
-- Only HTTP/HTTPS are public; SSH is restricted to the operator's configured /32.
+- Only HTTP/HTTPS are public. Normal releases use Azure Run Command; inbound SSH is closed.
 
 Bootstrap secret-write access is temporary. After seeding, apply
 `bootstrap_secrets=false`; the normal plan and infrastructure tests require the
@@ -115,8 +115,12 @@ runs do not receive the live credential.
 1. Build and test immutable Linux AMD64 images from the reviewed source revision.
 2. Check the Terraform plan: do not replace the VM or public address for drift
    introduced by tenant policies. The VM has destruction protection.
-3. Deliver images and runtime files through an authenticated operator channel;
-   verify checksums on the host before loading them.
+3. Publish the verified bundles as assets of a private GitHub release. Run
+   `scripts/deploy-private-release.mjs` with its tag and private artifact directory.
+   It exchanges local GitHub authentication for short-lived, artifact-scoped
+   download URLs and sends those URLs as protected Azure Run Command parameters.
+   The GitHub token never leaves the operator process, and SSH is not reopened.
+   The host verifies both checksums before loading the images.
 4. Run the checked-in `infra/runtime/configure-host.sh` with the vault name and
    public hostname. It installs/restarts the boot-persistent systemd service.
 5. Verify `/healthz`, `/actuator/health`, and the authenticated live browser suite.

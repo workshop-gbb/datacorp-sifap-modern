@@ -8,14 +8,10 @@ variable "owner" {
 }
 variable "ssh_public_key" {
   type        = string
-  description = "Public operator key. The private key never enters Terraform."
-}
-variable "operator_cidr" {
-  type        = string
-  description = "Single operator IPv4 address permitted to connect over SSH."
+  description = "Public recovery key required by the VM API; normal deployment uses Azure Run Command, not inbound SSH."
   validation {
-    condition     = can(cidrhost(var.operator_cidr, 0)) && endswith(var.operator_cidr, "/32")
-    error_message = "Use one IPv4 /32, never an unrestricted administrative CIDR."
+    condition     = startswith(var.ssh_public_key, "ssh-rsa ")
+    error_message = "Provide an RSA public recovery key; never a private key."
   }
 }
 variable "location" {

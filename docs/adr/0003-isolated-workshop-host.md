@@ -50,4 +50,9 @@ access must not be granted implicitly to the executing assistant.
 All base images are pinned by digest. Java and frontend builds occur in separate
 build stages. Runtime application containers use non-root accounts, read-only
 root filesystems and dropped capabilities. PostgreSQL is not published on a host
-port. Student access is limited to HTTPS; SSH is restricted to one operator /32.
+port. Student access is limited to HTTPS. Initial provisioning used a temporary
+operator /32 SSH rule, which the environment subsequently removed. Normal
+releases therefore use the existing Azure administrative channel rather than
+reopening inbound SSH: private GitHub release assets are downloaded with
+short-lived scoped URLs passed as protected Run Command parameters. The
+operator's GitHub token is never sent to the VM.
