@@ -1166,6 +1166,8 @@ select {
   font-weight: 500;
 }
 .table-scroll {
+  /* Contem os rotulos absolutos de leitor de tela na area rolavel. */
+  position: relative;
   overflow-x: auto;
   width: 100%;
   min-width: 0;

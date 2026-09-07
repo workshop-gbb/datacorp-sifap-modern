@@ -35,7 +35,7 @@ services:
     restart: unless-stopped
     networks: [database, application]
   frontend:
-    image: ${SIFAP_FRONTEND_IMAGE:-sifap-viewer:workshop-v2}
+    image: ${SIFAP_FRONTEND_IMAGE:-sifap-viewer:workshop-v3}
     build: ./frontend
     environment:
       API_URL: http://api:8080

@@ -119,6 +119,20 @@ for (const locale of locales) {
     await expect(page.getByText(d.legacyScope, { exact: true })).toBeVisible();
     await page.goto(`/${locale}/dashboard`);
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.getByRole("heading", { name: d.recent })).toBeVisible();
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+    const tableLabel = page.locator(".table-scroll thead .sr-only");
+    await expect(tableLabel).toBeAttached();
+    expect(
+      await tableLabel.evaluate(
+        (element) =>
+          element instanceof HTMLElement &&
+          element.closest(".table-scroll")?.contains(element.offsetParent),
+      ),
+    ).toBe(true);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
