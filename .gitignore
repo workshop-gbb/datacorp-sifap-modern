@@ -11,6 +11,8 @@ out/
 node_modules/
 .next/
 coverage/
+test-results/
+playwright-report/
 *.tsbuildinfo
 
 # Terraform: state and variables never belong in Git
