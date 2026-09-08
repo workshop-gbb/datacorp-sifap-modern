@@ -10,7 +10,38 @@ The modernized **Payment Inspection and Administration System (SIFAP)**, rebuilt
 | **Method** | Spec-driven development, governed by a written constitution |
 | **Legacy system of record** | `workshop-gbb/datacorp-sifap-legacy` |
 | **Language** | English only |
-| **Current state** | Specifications and gates; no application code yet |
+| **Current state** | Implemented viewer platform; the separate financial-rule increment remains gated |
+
+---
+
+## Deployed viewer platform
+
+The workshop platform runs in Azure resources isolated from the legacy lab:
+
+**<https://sifap-modern-fiepi9.eastus2.cloudapp.azure.com/pt-BR>**
+
+| Capability | Implementation |
+|---|---|
+| Landing and access | Editorial responsive landing, viewer login, bounded HttpOnly session and logout |
+| Languages | English, Spanish and Brazilian Portuguese; route-preserving selector and localized formatting |
+| Dashboard | PostgreSQL-backed indicators, six-month payment chart, program and geographic distributions |
+| Consultation | Search, filters, pagination, beneficiaries, programs, payments and related record details |
+| Reports | Filtered summaries, CSV of every matching record, and browser print / save-as-PDF layout |
+| Integrations | Real legacy HTTPS liveness and public IBGE geographic-reference requests |
+| Authorization | API-enforced VIEWER role; business POST, PUT, PATCH and DELETE requests are denied |
+| Deployment | Separate Azure VM, private Key Vault, managed identity, Caddy HTTPS and persistent PostgreSQL |
+
+This is **synthetic workshop data**, not a production benefit system. Its 150
+participants, six programs and six months of records demonstrate an actual
+persisted API and UI without inventing the unresolved financial rules.
+
+The account is `viewer`. The facilitator distributes its credential privately.
+Secrets are held in the new private Key Vault, not in Git, browser storage,
+application logs or this README.
+
+See [viewer operations](docs/operations/viewer.md), the
+[viewer specification](specs/002-viewer-platform/spec.md), and
+[deployment decision](docs/adr/0003-isolated-workshop-host.md).
 
 ---
 
@@ -37,6 +68,10 @@ docs/discovery/evidence-register.yaml  pinned legacy evidence and CLAR gates
 specs/<NNN>-<slice>/spec.md          EARS requirements for one increment
 .github/scripts/                     the traceability validator
 .github/workflows/spec-quality.yml   the gates that run on every push
+backend/                            Spring Boot API, PostgreSQL migrations and tests
+frontend/                           Next.js viewer UI and three-locale browser tests
+infra/                              isolated Azure host and private runtime configuration
+.github/workflows/application.yml    application, infrastructure and live viewer gates
 ```
 
 ---
@@ -58,7 +93,7 @@ When the legacy code says something nobody can explain, that becomes a gate rath
 
 ---
 
-## Current increment
+## Legacy-rule increment: still gated
 
 **Feature 001 — Trusted administration.** Document validation with legacy-equivalent outcomes, social program registration with duplicate rejection, and an immutable audit trail. See [`specs/001-trusted-administration/spec.md`](specs/001-trusted-administration/spec.md).
 

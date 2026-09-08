@@ -1,0 +1,15 @@
+[Unit]
+Description=SIFAP modern workshop
+After=docker.service network-online.target
+Requires=docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/sifap-modern-host
+ExecStart=/bin/bash /opt/sifap-modern/infra/runtime/start.sh ${SIFAP_VAULT} ${SIFAP_HOST}
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target
