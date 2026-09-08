@@ -14,7 +14,10 @@ fi
 deadline=$((SECONDS + 480))
 for service in db api frontend gateway; do
   container="sifap-modern-$service-1"
-  state="$(docker inspect --format '{{.State.Running}}' "$container")"
+  if ! state="$(docker inspect --format '{{.State.Running}}' "$container")"; then
+    printf 'ERROR: cannot inspect required container %s; verify Docker and the runtime installation.\n' "$container" >&2
+    exit 1
+  fi
   if [[ "$state" != true ]]; then
     if $check_only; then printf 'ERROR: %s is not running.\n' "$service" >&2; exit 1; fi
     systemctl restart sifap-modern.service

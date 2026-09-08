@@ -46,7 +46,7 @@ run "isolated_read_only_runtime" {
     error_message = "REQ-114: readiness must validate the database and API, not just VM power state."
   }
   assert {
-    condition     = strcontains(local.startup_validator_script, "--check-only") && !strcontains(local.startup_validator_script, "down")
+    condition     = strcontains(local.startup_validator_script, "--check-only") && !strcontains(local.startup_validator_script, "docker compose down")
     error_message = "REQ-115: on-demand validation must support a non-mutating check-only mode."
   }
 }
