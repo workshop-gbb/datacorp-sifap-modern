@@ -41,6 +41,14 @@ run "isolated_read_only_runtime" {
     condition     = length([for rule in azurerm_network_security_group.modern.security_rule : rule if rule.destination_port_range == "22"]) == 0
     error_message = "Normal releases must not open inbound SSH."
   }
+  assert {
+    condition     = strcontains(local.startup_validator_script, "SELECT 1") && strcontains(local.startup_validator_script, "/actuator/health")
+    error_message = "REQ-114: readiness must validate the database and API, not just VM power state."
+  }
+  assert {
+    condition     = strcontains(local.startup_validator_script, "--check-only") && !strcontains(local.startup_validator_script, "docker compose down")
+    error_message = "REQ-115: on-demand validation must support a non-mutating check-only mode."
+  }
 }
 
 run "reject_invalid_recovery_key" {
