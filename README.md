@@ -35,9 +35,10 @@ This is **synthetic workshop data**, not a production benefit system. Its 150
 participants, six programs and six months of records demonstrate an actual
 persisted API and UI without inventing the unresolved financial rules.
 
-The account is `viewer`. The facilitator distributes its credential privately.
-Secrets are held in the new private Key Vault, not in Git, browser storage,
-application logs or this README.
+Click the access button to enter directly as `viewer`, without a password.
+This is explicitly enabled public access to synthetic classroom data only.
+Sessions and permissions remain server-enforced; operator access and secret
+configuration remain protected.
 
 See [viewer operations](docs/operations/viewer.md), the
 [viewer specification](specs/002-viewer-platform/spec.md), and

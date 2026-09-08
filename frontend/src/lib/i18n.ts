@@ -5,6 +5,12 @@ export function isLocale(value: string): value is Locale {
 }
 
 const en = {
+  enterViewer: "Enter as viewer",
+  directViewerCopy:
+    "One click to explore the workshop. No username or password required.",
+  directViewerNote:
+    "Public access to synthetic data only. You cannot edit records, administer the system or execute payments.",
+  credentialAccess: "Sign in with a workshop credential",
   app: "SIFAP",
   edition: "Modern platform",
   viewer: "Viewer",
@@ -189,6 +195,12 @@ const en = {
 };
 
 const es: typeof en = {
+  enterViewer: "Entrar como viewer",
+  directViewerCopy:
+    "Un clic para explorar el taller. Sin usuario ni contraseña.",
+  directViewerNote:
+    "Acceso público solo a datos sintéticos. No permite editar registros, administrar el sistema ni ejecutar pagos.",
+  credentialAccess: "Acceder con una credencial del taller",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",
@@ -375,6 +387,11 @@ const es: typeof en = {
 };
 
 const pt: typeof en = {
+  enterViewer: "Entrar como viewer",
+  directViewerCopy: "Um clique para explorar a imersão. Sem usuário ou senha.",
+  directViewerNote:
+    "Acesso público somente a dados sintéticos. Não permite editar registros, administrar o sistema ou executar pagamentos.",
+  credentialAccess: "Entrar com uma credencial da imersão",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",

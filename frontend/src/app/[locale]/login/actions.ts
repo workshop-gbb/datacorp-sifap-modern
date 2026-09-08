@@ -22,12 +22,31 @@ export async function login(
     password.length > 128
   )
     return { error: "invalidInput" };
+  return createSession(locale, "/auth/login", { username, password });
+}
+
+export async function enterViewer(
+  _state: LoginState,
+  form: FormData,
+): Promise<LoginState> {
+  const locale = String(form.get("locale") ?? "");
+  if (!isLocale(locale)) return { error: "invalidInput" };
+  if (process.env.SIFAP_GUEST_VIEWER_ENABLED !== "true")
+    return { error: "unavailable" };
+  return createSession(locale, "/auth/viewer");
+}
+
+async function createSession(
+  locale: string,
+  path: string,
+  credentials?: { username: string; password: string },
+): Promise<LoginState> {
   let response: Response;
   try {
-    response = await fetch(apiUrl("/auth/login"), {
+    response = await fetch(apiUrl(path), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: credentials ? JSON.stringify(credentials) : undefined,
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(12000),

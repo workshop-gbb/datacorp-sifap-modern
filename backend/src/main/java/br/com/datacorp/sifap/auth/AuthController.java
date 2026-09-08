@@ -21,6 +21,7 @@ class AuthController {
     private final JwtEncoder tokens;
     private final String username;
     private final String passwordHash;
+    private final boolean guestEnabled;
     private final Map<String, Attempt> attempts = new HashMap<>();
     private static final long SESSION_SECONDS = 3600;
     private record Attempt(int count, long until) {}
@@ -30,13 +31,15 @@ class AuthController {
 
     AuthController(PasswordEncoder passwords, JwtEncoder tokens,
             @Value("${sifap.viewer.username}") String username,
-            @Value("${sifap.viewer.password-hash}") String passwordHash) {
+            @Value("${sifap.viewer.password-hash}") String passwordHash,
+            @Value("${sifap.viewer.guest-enabled:false}") boolean guestEnabled) {
         if (!passwordHash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$"))
             throw new IllegalArgumentException("A bcrypt viewer password hash is required");
         this.passwords = passwords;
         this.tokens = tokens;
         this.username = username;
         this.passwordHash = passwordHash;
+        this.guestEnabled = guestEnabled;
     }
     @PostMapping("/login")
     ResponseEntity<Session> login(@Valid @RequestBody Login request, HttpServletRequest http) {
@@ -44,6 +47,20 @@ class AuthController {
         boolean validPassword = passwords.matches(request.password(), passwordHash);
         if (!username.equals(request.username()) || !validPassword)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS");
+        return session();
+    }
+
+    @PostMapping("/viewer")
+    ResponseEntity<Session> viewer(@RequestBody(required = false) Map<String, Object> input,
+            HttpServletRequest http) {
+        if (!guestEnabled) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "GUEST_ACCESS_DISABLED");
+        limit(http.getRemoteAddr());
+        if ((input != null && !input.isEmpty()) || http.getQueryString() != null)
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "VIEWER_ACCESS_TAKES_NO_IDENTITY");
+        return session();
+    }
+
+    private ResponseEntity<Session> session() {
         Instant now = Instant.now();
         var claims = JwtClaimsSet.builder().issuer(SecurityConfiguration.ISSUER)
             .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(username)

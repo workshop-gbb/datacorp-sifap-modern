@@ -11,9 +11,14 @@ Modern routes begin with `/en`, `/es`, or `/pt-BR`. After sign-in, students can
 explore the dashboard, beneficiaries, programs, payments, reports and integrations.
 The language selector retains the route and filters.
 
-The two accounts have separate credentials. The facilitator supplies them through
-an approved private channel. Do not paste passwords into commit messages, issues,
-pull requests, screenshots, command arguments or application logs.
+Click **Enter as viewer** in either environment to create a restricted classroom
+session without entering a username or password. The legacy terminal and modern
+dashboard use independent host-scoped sessions. Any public visitor can inspect
+the synthetic data in this explicitly enabled workshop mode.
+
+Operator administration remains credential-protected. The modern credential
+form is retained separately for compatibility; no password is embedded in the
+public landing, URL, browser storage or client code.
 
 ## What the workshop does and does not demonstrate
 
@@ -105,10 +110,9 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-Before running browser tests, provide either `SIFAP_TEST_SECRET_FILE` pointing to
-the protected JSON file or `SIFAP_VIEWER_PASSWORD` in the process environment.
-Missing credentials fail rather than skip. Tests never print token/password
-values, and recording of browser traces/video is disabled.
+The classroom browser tests use the actual one-click viewer flow and require no
+shared password. They test both origins, role-injection denial, logout and the
+legacy Natural iframe. Browser traces/video remain disabled.
 
 ## Live verification
 
@@ -127,8 +131,8 @@ reporting without treating an unrelated upstream outage as fabricated success.
 
 The GitHub Actions `Viewer application` workflow runs backend, frontend and
 Terraform gates. Its live job uses repository variable `SIFAP_BASE_URL` and
-secret `SIFAP_VIEWER_PASSWORD`, and runs only after those gates pass. Pull request
-runs do not receive the live credential.
+the public viewer session operation, and runs only after those gates pass.
+No shared account password is injected into the live viewer job.
 
 ## Redeployment and recovery
 

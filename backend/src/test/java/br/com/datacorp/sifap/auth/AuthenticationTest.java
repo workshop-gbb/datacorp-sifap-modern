@@ -31,7 +31,7 @@ class AuthenticationTest {
     @Test void should_limit_repeated_login_attempts_without_logging_credentials() { // REQ-103
         PasswordEncoder passwords = mock(PasswordEncoder.class);
         JwtEncoder encoder = mock(JwtEncoder.class);
-        var controller = new AuthController(passwords, encoder, "viewer", "$2a$12$" + "x".repeat(53));
+        var controller = new AuthController(passwords, encoder, "viewer", "$2a$12$" + "x".repeat(53), false);
         var request = new MockHttpServletRequest();
         request.setRemoteAddr("127.0.0.17");
         for (int i = 0; i < 30; i++) {
@@ -43,6 +43,15 @@ class AuthenticationTest {
             controller.login(new AuthController.Login("viewer", "test-invalid"), request));
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.getStatusCode());
         verifyNoInteractions(encoder);
-        assertThrows(IllegalArgumentException.class, () -> new AuthController(passwords, encoder, "viewer", "plaintext"));
+        assertThrows(IllegalArgumentException.class, () -> new AuthController(passwords, encoder, "viewer", "plaintext", false));
+    }
+    @Test void should_disable_guest_access_unless_explicitly_enabled() { // REQ-120
+        var encoder = mock(JwtEncoder.class);
+        var controller = new AuthController(mock(PasswordEncoder.class), encoder,
+            "viewer", "$2a$12$" + "x".repeat(53), false);
+        var error = assertThrows(ResponseStatusException.class,
+            () -> controller.viewer(null, new MockHttpServletRequest()));
+        assertEquals(HttpStatus.NOT_FOUND, error.getStatusCode());
+        verifyNoInteractions(encoder);
     }
 }
