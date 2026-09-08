@@ -1,0 +1,74 @@
+name: sifap-modern
+services:
+  db:
+    image: postgres:16-alpine@sha256:cf78e76683b9ca8c5733cbbdce6c9262b45b6767934dd0a95e671f9a0fc20685
+    environment:
+      POSTGRES_DB: sifap
+      POSTGRES_USER: sifap
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in a protected environment}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sifap -d sifap"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    restart: unless-stopped
+    networks: [database]
+  api:
+    image: ${SIFAP_API_IMAGE:-sifap-api:workshop-v1}
+    build: ./backend
+    environment:
+      JDBC_URL: jdbc:postgresql://db:5432/sifap
+      DB_USERNAME: sifap
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      SIFAP_VIEWER_USERNAME: ${SIFAP_VIEWER_USERNAME:-viewer}
+      SIFAP_VIEWER_PASSWORD_HASH: ${SIFAP_VIEWER_PASSWORD_HASH:?Set a bcrypt hash}
+      SIFAP_JWT_SECRET: ${SIFAP_JWT_SECRET:?Set a random signing secret}
+    depends_on:
+      db:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [database, application]
+  frontend:
+    image: ${SIFAP_FRONTEND_IMAGE:-sifap-viewer:workshop-v3}
+    build: ./frontend
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      api:
+        condition: service_healthy
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    networks: [application]
+  gateway:
+    image: caddy:2-alpine@sha256:5f5c8640aae01df9654968d946d8f1a56c497f1dd5c5cda4cf95ab7c14d58648
+    environment:
+      SIFAP_HOST: ${SIFAP_HOST:?Set the public HTTPS hostname}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/runtime/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks: [application]
+volumes:
+  postgres-data:
+  caddy-data:
+  caddy-config:
+networks:
+  database:
+    internal: true
+  application:

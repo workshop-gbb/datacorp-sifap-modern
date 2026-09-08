@@ -1,0 +1,22 @@
+#cloud-config
+package_update: true
+packages:
+  - docker.io
+  - docker-compose-v2
+  - curl
+  - jq
+  - ca-certificates
+write_files:
+  - path: /etc/sysctl.d/90-sifap.conf
+    permissions: "0644"
+    content: |
+      net.ipv4.ip_forward=1
+  - path: /etc/docker/daemon.json
+    permissions: "0644"
+    content: |
+      {"log-driver":"local","log-opts":{"max-size":"10m","max-file":"3"}}
+runcmd:
+  - [systemctl, enable, --now, docker]
+  - [sysctl, --system]
+  - [mkdir, -p, /opt/sifap-modern]
+  - [chmod, "0700", /opt/sifap-modern]
