@@ -51,6 +51,26 @@ The API signing token lives in a short-lived HttpOnly, SameSite=Lax, Secure cook
 at the browser boundary. The Next.js server supplies the bearer token to Spring
 Security. API authorization does not rely on cookie presence or hidden buttons.
 
+## Daily 07:00 startup
+
+The shared Azure Automation runbook `Start-SifapWorkshopMorning` starts this
+application VM and the legacy application VM every day at **07:00
+America/Sao_Paulo**, including weekends. The nightly MCAPS shutdown is preserved.
+Startup is bounded to the morning window; no always-on watchdog is installed.
+
+Its schedule and minimal VM-scoped identity permissions are owned by the existing
+[legacy morning-start module](https://github.com/workshop-gbb/datacorp-sifap-legacy/tree/develop/infra/morning-start).
+This repository owns [verify-startup.sh](../../infra/runtime/verify-startup.sh),
+which checks the persisted PostgreSQL database with `SELECT 1`, container health,
+Spring readiness and frontend readiness. No financial data or credentials are logged.
+
+The job reports success only after both systems and databases are ready and their
+public HTTPS probes pass. The 07:00 schedule is the trigger time, not a promise
+that VM boot completes instantaneously. Failures/timeouts fail the Automation job.
+
+Operators can run `ValidateOnly` at any time without starting a stopped VM or
+restarting containers. The guest script receives `--check-only` in this mode.
+
 ## Local verification
 
 Requirements: Java 25, Maven, Node 24, pnpm 10.30.3 and Docker.

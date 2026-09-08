@@ -1,5 +1,6 @@
 locals {
-  prefix = "sifap-modern"
+  startup_validator_script = file("${path.module}/runtime/verify-startup.sh")
+  prefix                   = "sifap-modern"
   tags = {
     project       = "sifap-modern"
     environment   = "workshop"
