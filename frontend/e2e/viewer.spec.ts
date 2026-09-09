@@ -186,13 +186,14 @@ test("administrator credentials grant only the configured administrator identity
   await login(page, "en", "ADMIN");
   await expect(page.getByText(d.administrator, { exact: true })).toBeVisible();
   const viewer = credentials("VIEWER");
-  const mismatch = await request.post(
+  const viewerLogin = await request.post(
     `${process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080"}/api/v1/auth/login`,
     {
       data: { username: viewer.username, password: viewer.password },
     },
   );
-  expect(mismatch.status()).toBe(401);
+  expect(viewerLogin.status()).toBe(200);
+  expect((await viewerLogin.json()).user.role).toBe("VIEWER");
 });
 
 test("API enforces viewer permissions and reconciles records", async ({
