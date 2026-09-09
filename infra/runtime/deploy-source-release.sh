@@ -20,7 +20,7 @@ tar -xzf "$stage/source.tar.gz" -C "$stage/source"
 # The image still targets this AMD64 host; remove only the BuildKit automatic
 # platform variable before using the compatible legacy builder.
 sed -i 's/^FROM --platform=\$BUILDPLATFORM /FROM /' "$stage/source/backend/Dockerfile"
-sed -i 's/^RUN --mount=type=cache,target=\\/root\\/.m2 /RUN /' "$stage/source/backend/Dockerfile"
+sed -i 's|^RUN --mount=type=cache,target=/root/.m2 |RUN |' "$stage/source/backend/Dockerfile"
 docker build --pull=false -t sifap-api:workshop-v5 "$stage/source/backend"
 docker build --pull=false --build-arg NPM_REGISTRY=https://packagefeedproxy.microsoft.io/npm/ \
   -t sifap-viewer:workshop-v5 "$stage/source/frontend"

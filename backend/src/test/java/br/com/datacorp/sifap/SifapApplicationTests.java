@@ -70,17 +70,18 @@ class SifapApplicationTests {
 	}
 	@Test void should_authenticate_real_viewer_credentials() throws Exception { // REQ-103
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
-			.content("{\"username\":\"viewer\",\"password\":\"test-only\",\"role\":\"VIEWER\"}"))
+			.content("{\"username\":\"viewer\",\"password\":\"test-only\"}"))
 			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("VIEWER"))
 			.andExpect(jsonPath("$.accessToken").isString());
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
-			.content("{\"username\":\"viewer\",\"password\":\"wrong\",\"role\":\"VIEWER\"}"))
+			.content("{\"username\":\"viewer\",\"password\":\"wrong\"}"))
 			.andExpect(status().isUnauthorized());
+		// REQ-122: client role data is ignored; the account remains VIEWER.
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
 			.content("{\"username\":\"viewer\",\"password\":\"test-only\",\"role\":\"ADMIN\"}"))
-			.andExpect(status().isUnauthorized());
+			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("VIEWER"));
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
-			.content("{\"username\":\"admin\",\"password\":\"admin-test-only\",\"role\":\"ADMIN\"}"))
+			.content("{\"username\":\"admin\",\"password\":\"admin-test-only\"}"))
 			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("ADMIN"));
 		http.perform(post("/api/v1/auth/viewer")).andExpect(status().isUnauthorized());
 	}
