@@ -30,8 +30,7 @@ class AuthController {
     private record Attempt(int count, long until) {}
 
     record Login(@NotBlank @Size(max = 64) String username,
-                 @NotBlank @Size(max = 128) String password,
-                 @NotBlank @Pattern(regexp = "ADMIN|VIEWER") String role) {}
+                 @NotBlank @Size(max = 128) String password) {}
     record User(String id, String displayName, String role) {}
     record Session(String accessToken, long expiresIn, User user) {}
 
@@ -53,24 +52,31 @@ class AuthController {
     ResponseEntity<Session> login(@Valid @RequestBody Login request, HttpServletRequest http) {
         String source = http.getRemoteAddr();
         limit(source);
-        Account account = accounts.get(request.role());
-        // The password is always verified so a wrong role cannot be told apart by timing.
-        boolean validPassword = passwords.matches(request.password(), account.passwordHash());
-        if (!account.username().equals(request.username()) || !validPassword)
+        String grantedRole = null;
+        Account grantedAccount = null;
+        for (var entry : accounts.entrySet()) {
+            Account account = entry.getValue();
+            boolean validPassword = passwords.matches(request.password(), account.passwordHash());
+            if (account.username().equals(request.username()) && validPassword) {
+                grantedRole = entry.getKey();
+                grantedAccount = account;
+            }
+        }
+        if (grantedRole == null || grantedAccount == null)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS");
         synchronized (this) {
             attempts.remove(source);
         }
         Instant now = Instant.now();
         var claims = JwtClaimsSet.builder().issuer(SecurityConfiguration.ISSUER)
-            .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(account.username())
+            .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(grantedAccount.username())
             .issuedAt(now).expiresAt(now.plusSeconds(SESSION_SECONDS)).id(UUID.randomUUID().toString())
-            .claim("roles", List.of(request.role())).build();
+            .claim("roles", List.of(grantedRole)).build();
         String token = tokens.encode(JwtEncoderParameters.from(
             JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
             .body(new Session(token, SESSION_SECONDS,
-                new User(account.username(), account.displayName(), request.role())));
+                new User(grantedAccount.username(), grantedAccount.displayName(), grantedRole)));
     }
 
     @GetMapping("/me")

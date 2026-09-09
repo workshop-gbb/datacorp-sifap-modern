@@ -10,11 +10,6 @@ export function LoginForm({ locale }: { locale: Locale }) {
   return (
     <form action={action} className="login-form" aria-busy={pending}>
       <input type="hidden" name="locale" value={locale} />
-      <label htmlFor="role">{d.accessType}</label>
-      <select id="role" name="role" defaultValue="VIEWER" required>
-        <option value="VIEWER">{d.viewerOption}</option>
-        <option value="ADMIN">{d.adminOption}</option>
-      </select>
       <label htmlFor="username">{d.username}</label>
       <input
         id="username"

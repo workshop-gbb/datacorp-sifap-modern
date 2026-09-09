@@ -28,7 +28,6 @@ async function login(
   const d = dictionary(locale);
   const account = credentials(role);
   await page.goto(`/${locale}/login`);
-  await page.getByLabel(d.accessType, { exact: true }).selectOption(role);
   await page.getByLabel(d.username, { exact: true }).fill(account.username);
   await page.getByLabel(d.password, { exact: true }).fill(account.password);
   await page.getByRole("button", { name: d.signIn, exact: true }).click();
@@ -190,11 +189,7 @@ test("administrator credentials grant only the configured administrator identity
   const mismatch = await request.post(
     `${process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080"}/api/v1/auth/login`,
     {
-      data: {
-        username: viewer.username,
-        password: viewer.password,
-        role: "ADMIN",
-      },
+      data: { username: viewer.username, password: viewer.password },
     },
   );
   expect(mismatch.status()).toBe(401);
@@ -208,11 +203,7 @@ test("API enforces viewer permissions and reconciles records", async ({
   expect((await request.get(`${base}/api/v1/payments`)).status()).toBe(401);
   const viewer = credentials("VIEWER");
   const loginResponse = await request.post(`${base}/api/v1/auth/login`, {
-    data: {
-      username: viewer.username,
-      password: viewer.password,
-      role: "VIEWER",
-    },
+    data: { username: viewer.username, password: viewer.password },
   });
   expect(loginResponse.status()).toBe(200);
   const session = await loginResponse.json();

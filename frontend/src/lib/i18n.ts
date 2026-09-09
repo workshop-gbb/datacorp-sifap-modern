@@ -5,9 +5,6 @@ export function isLocale(value: string): value is Locale {
 }
 
 const en = {
-  accessType: "Access type",
-  adminOption: "Administrator \u2014 full access",
-  viewerOption: "Viewer \u2014 read only",
   administrator: "Administrator",
   app: "SIFAP",
   edition: "Modern platform",
@@ -28,14 +25,14 @@ const en = {
   password: "Password",
   loginTitle: "Your perspective starts here.",
   loginCopy:
-    "Choose the access type and enter the credentials shared by your facilitator.",
+    "Enter the credentials shared by your facilitator. The account determines the access level.",
   loginAside: "Every detail. In context.",
   loginAsideCopy:
     "From an overview to the story behind a record. One connected experience, designed for understanding.",
   loginHelp:
-    "The selected role must match the account. Viewer is read only; the current modern administrator also cannot execute unresolved financial operations.",
+    "Viewer is read only. The administrator account is reserved for the facilitator and still cannot execute unresolved financial operations.",
   loginPending: "Signing in…",
-  invalidCredentials: "The username, password or access type is incorrect.",
+  invalidCredentials: "The username or password is incorrect.",
   rateLimited: "Too many attempts. Wait five minutes before trying again.",
   unavailable: "The service is unavailable. Please try again shortly.",
   invalidInput: "Check the information and try again.",
@@ -193,9 +190,6 @@ const en = {
 };
 
 const es: typeof en = {
-  accessType: "Tipo de acceso",
-  adminOption: "Administrador \u2014 acceso completo",
-  viewerOption: "Viewer \u2014 solo lectura",
   administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
@@ -216,15 +210,14 @@ const es: typeof en = {
   password: "Contraseña",
   loginTitle: "Su perspectiva comienza aquí.",
   loginCopy:
-    "Elija el tipo de acceso e introduzca las credenciales compartidas por su facilitador.",
+    "Introduzca las credenciales compartidas por su facilitador. La cuenta determina el nivel de acceso.",
   loginAside: "Cada detalle. En contexto.",
   loginAsideCopy:
     "De la visión general a la historia de un registro. Una experiencia conectada, diseñada para comprender.",
   loginHelp:
-    "El perfil seleccionado debe coincidir con la cuenta. Viewer es de solo lectura; el administrador moderno tampoco ejecuta operaciones financieras aún no definidas.",
+    "Viewer es de solo lectura. La cuenta administradora está reservada al facilitador y tampoco ejecuta operaciones financieras aún no definidas.",
   loginPending: "Accediendo…",
-  invalidCredentials:
-    "El usuario, la contraseña o el tipo de acceso son incorrectos.",
+  invalidCredentials: "El usuario o la contraseña son incorrectos.",
   rateLimited:
     "Demasiados intentos. Espere cinco minutos antes de volver a intentarlo.",
   unavailable: "El servicio no está disponible. Inténtelo de nuevo en breve.",
@@ -384,9 +377,6 @@ const es: typeof en = {
 };
 
 const pt: typeof en = {
-  accessType: "Tipo de acesso",
-  adminOption: "Administrador \u2014 acesso completo",
-  viewerOption: "Viewer \u2014 somente leitura",
   administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
@@ -407,15 +397,14 @@ const pt: typeof en = {
   password: "Senha",
   loginTitle: "Sua perspectiva começa aqui.",
   loginCopy:
-    "Escolha o tipo de acesso e informe as credenciais compartilhadas pelo facilitador.",
+    "Informe as credenciais compartilhadas pelo facilitador. A conta determina o nível de acesso.",
   loginAside: "Cada detalhe. Em contexto.",
   loginAsideCopy:
     "Da visão geral à história por trás de um registro. Uma experiência conectada, desenhada para compreender.",
   loginHelp:
-    "O perfil selecionado deve corresponder à conta. Viewer é somente leitura; o administrador moderno também não executa operações financeiras ainda não definidas.",
+    "Viewer é somente leitura. A conta administradora é reservada ao facilitador e também não executa operações financeiras ainda não definidas.",
   loginPending: "Entrando…",
-  invalidCredentials:
-    "O usuário, a senha ou o tipo de acesso estão incorretos.",
+  invalidCredentials: "O usuário ou a senha estão incorretos.",
   rateLimited:
     "Muitas tentativas. Aguarde cinco minutos antes de tentar novamente.",
   unavailable: "O serviço está indisponível. Tente novamente em instantes.",

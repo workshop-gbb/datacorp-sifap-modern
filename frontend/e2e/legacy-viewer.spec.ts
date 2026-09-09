@@ -26,9 +26,6 @@ async function signIn(
   const account = credentials(role);
   await page.goto(`${origin}/${locale}/#acesso`);
   await page
-    .getByLabel(labels.accessType, { exact: true })
-    .selectOption(role === "ADMIN" ? labels.adminOption : labels.viewerOption);
-  await page
     .getByLabel(labels.username, { exact: true })
     .fill(account.username);
   await page
@@ -39,12 +36,9 @@ async function signIn(
 
 interface Labels {
   title: string;
-  accessType: string;
   username: string;
   password: string;
   signIn: string;
-  adminOption: string;
-  viewerOption: string;
   signOut: string;
   invalid: string;
 }
@@ -54,42 +48,33 @@ const locales: Array<[string, Labels]> = [
     "pt-BR",
     {
       title: "O futuro começa",
-      accessType: "Tipo de acesso",
       username: "Usuário",
       password: "Senha",
       signIn: "Entrar",
-      adminOption: "Administrador — acesso completo",
-      viewerOption: "Viewer — somente consulta",
       signOut: "Sair",
-      invalid: "Usuário, senha ou tipo de acesso incorretos.",
+      invalid: "Usuário ou senha incorretos.",
     },
   ],
   [
     "en",
     {
       title: "The future begins",
-      accessType: "Access type",
       username: "Username",
       password: "Password",
       signIn: "Sign in",
-      adminOption: "Administrator — full access",
-      viewerOption: "Viewer — read only",
       signOut: "Sign out",
-      invalid: "Incorrect username, password or access type.",
+      invalid: "Incorrect username or password.",
     },
   ],
   [
     "es",
     {
       title: "El futuro comienza",
-      accessType: "Tipo de acceso",
       username: "Usuario",
       password: "Contraseña",
       signIn: "Acceder",
-      adminOption: "Administrador — acceso completo",
-      viewerOption: "Viewer — solo consulta",
       signOut: "Salir",
-      invalid: "Usuario, contraseña o tipo de acceso incorrectos.",
+      invalid: "Usuario o contraseña incorrectos.",
     },
   ],
 ];
@@ -135,6 +120,7 @@ for (const [locale, labels] of locales) {
     const screen = page.frameLocator("iframe").locator(".xterm-rows");
     await expect(screen).toBeVisible({ timeout: 30000 });
     await expect(screen).toContainText("BENEFICIARY QUERY", { timeout: 30000 });
+    await page.waitForTimeout(2500);
 
     expect(
       (
@@ -145,6 +131,7 @@ for (const [locale, labels] of locales) {
       .getByRole("button", { name: labels.signOut, exact: true })
       .click();
     await expect(page).toHaveURL(new RegExp(`/${locale}/$`));
+    await page.waitForTimeout(3000);
     expect(
       (
         await context.request.get(`${origin}/terminal/`, { maxRedirects: 0 })
@@ -169,6 +156,7 @@ test("legacy: administrator reaches the operator terminal and the Adabas console
       await context.request.get(`${origin}/admin/`, { maxRedirects: 0 })
     ).status(),
   ).toBe(200);
+  await page.getByRole("button", { name: labels.signOut, exact: true }).click();
 });
 
 test("legacy: wrong credentials, role mismatch and forged sessions are denied", async ({
@@ -179,9 +167,6 @@ test("legacy: wrong credentials, role mismatch and forged sessions are denied", 
   const labels = locales[1][1];
   const viewer = credentials("VIEWER");
   await page.goto(`${origin}/en/#acesso`);
-  await page
-    .getByLabel(labels.accessType, { exact: true })
-    .selectOption(labels.viewerOption);
   await page.getByLabel(labels.username, { exact: true }).fill(viewer.username);
   await page
     .getByLabel(labels.password, { exact: true })
@@ -189,18 +174,27 @@ test("legacy: wrong credentials, role mismatch and forged sessions are denied", 
   await page.getByRole("button", { name: labels.signIn, exact: true }).click();
   await expect(page.getByRole("alert")).toContainText(labels.invalid);
 
-  // A viewer credential must never be accepted for the administrator role.
+  // A viewer credential must still create only a viewer session.
   const escalation = await request.post(`${origin}/auth/login`, {
     headers: { Origin: origin },
     form: {
       locale: "en",
-      role: "ADMIN",
       username: viewer.username,
       password: viewer.password,
     },
     maxRedirects: 0,
   });
-  expect(escalation.status()).toBe(401);
+  expect(escalation.status()).toBe(303);
+  const viewerCookie = escalation.headers()["set-cookie"]?.split(";")[0];
+  expect(viewerCookie).toBeTruthy();
+  expect(
+    (
+      await request.get(`${origin}/admin/`, {
+        headers: { Cookie: viewerCookie!, "X-Sifap-Role": "ADMIN" },
+        maxRedirects: 0,
+      })
+    ).status(),
+  ).toBe(403);
   expect(
     (
       await request.get(`${origin}/viewer`, {

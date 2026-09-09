@@ -6,9 +6,9 @@
 | Date | 2026-09-08 |
 | Scope | REQ-116 and REQ-121 through REQ-124 |
 
-The user requires both running systems to authenticate with username, password
-and an explicit ADMIN/VIEWER selector. The selected value is a request, not an
-authorization decision: credentials are bound to one role on the server.
+The user requires both running systems to authenticate with username and password.
+Each account is bound to one server-side role: the private `admin` credentials
+open administrator access, while the `viewer` credentials open consultation.
 
 The modern API keeps one login operation and two independently hashed accounts.
 It issues the existing Spring Security JWT with the authenticated authority.
@@ -27,8 +27,8 @@ the session. Legacy WebSocket streams are capped at one hour. The restricted
 session driver terminates its Natural process when the browser disconnects,
 preventing orphan sessions from exhausting the Natural CE buffer pool.
 
-Alternatives rejected: storing plaintext passwords in Git or HTML; allowing the
-selector to define the granted role; using an admin account with hidden buttons;
+Alternatives rejected: storing plaintext passwords in Git or HTML; asking the
+browser to define the granted role; using an admin account with hidden buttons;
 sharing a cross-origin session between applications.
 
 Node 24 is already the modern frontend's pinned LTS runtime. The legacy gateway

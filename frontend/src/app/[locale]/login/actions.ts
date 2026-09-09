@@ -15,14 +15,12 @@ export async function login(
   const locale = String(form.get("locale") ?? "");
   const username = String(form.get("username") ?? "").trim();
   const password = String(form.get("password") ?? "");
-  const role = String(form.get("role") ?? "");
   if (
     !isLocale(locale) ||
     !username ||
     username.length > 64 ||
     !password ||
-    password.length > 128 ||
-    !["ADMIN", "VIEWER"].includes(role)
+    password.length > 128
   )
     return { error: "invalidInput" };
 
@@ -31,7 +29,7 @@ export async function login(
     response = await fetch(apiUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password, role }),
+      body: JSON.stringify({ username, password }),
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(12000),

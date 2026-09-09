@@ -11,10 +11,10 @@ Modern routes begin with `/en`, `/es`, or `/pt-BR`. After sign-in, students can
 explore the dashboard, beneficiaries, programs, payments, reports and integrations.
 The language selector retains the route and filters.
 
-Choose Administrator or Viewer on either sign-in page and enter the credentials
-supplied by the facilitator. The legacy terminal and modern dashboard use
-independent host-scoped sessions. A selected role is not trusted: the server
-rejects credentials bound to another role.
+Enter the credentials supplied by the facilitator on either sign-in page. The
+legacy terminal and modern dashboard use independent host-scoped sessions. The
+server identifies ADMIN or VIEWER from the authenticated account; the browser
+does not select or supply the granted role.
 
 Passwords are stored as hashes in runtime configuration read from Key Vault.
 They are not embedded in the public landing, URL, browser storage or client code.

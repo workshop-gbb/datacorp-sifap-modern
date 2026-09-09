@@ -35,8 +35,8 @@ This is **synthetic workshop data**, not a production benefit system. Its 150
 participants, six programs and six months of records demonstrate an actual
 persisted API and UI without inventing the unresolved financial rules.
 
-Choose Administrator or Viewer on the sign-in page and enter the credentials
-provided by the facilitator. The selected role must match the account; sessions
+Enter the credentials provided by the facilitator. The account determines the
+role: `admin` is reserved for the facilitator and `viewer` is read only. Sessions
 and permissions remain server-enforced. Passwords stay in Key Vault and are not
 embedded in the UI, source or browser storage.
 

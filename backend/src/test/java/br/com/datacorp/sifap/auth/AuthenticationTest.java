@@ -41,11 +41,11 @@ class AuthenticationTest {
         request.setRemoteAddr("127.0.0.17");
         for (int i = 0; i < 20; i++) {
             var failure = assertThrows(ResponseStatusException.class, () ->
-                controller.login(new AuthController.Login("viewer", "test-invalid", "VIEWER"), request));
+                controller.login(new AuthController.Login("viewer", "test-invalid"), request));
             assertEquals(HttpStatus.UNAUTHORIZED, failure.getStatusCode());
         }
         var limited = assertThrows(ResponseStatusException.class, () ->
-            controller.login(new AuthController.Login("viewer", "test-invalid", "VIEWER"), request));
+            controller.login(new AuthController.Login("viewer", "test-invalid"), request));
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, limited.getStatusCode());
         verifyNoInteractions(encoder);
         assertThrows(IllegalArgumentException.class, () -> new AuthController(
@@ -63,9 +63,9 @@ class AuthenticationTest {
         var request = new MockHttpServletRequest();
         request.setRemoteAddr("127.0.0.18");
         assertThrows(ResponseStatusException.class, () ->
-            controller.login(new AuthController.Login("viewer", "viewer-pass", "ADMIN"), request));
+            controller.login(new AuthController.Login("viewer", "admin-pass"), request));
         assertThrows(ResponseStatusException.class, () ->
-            controller.login(new AuthController.Login("admin", "admin-pass", "VIEWER"), request));
+            controller.login(new AuthController.Login("admin", "viewer-pass"), request));
         verifyNoInteractions(encoder);
     }
 
