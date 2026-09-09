@@ -11,6 +11,59 @@
   --mono: "JetBrains Mono Variable", monospace;
   --sans: "Inter Variable", sans-serif;
 }
+.viewer-entry {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.viewer-entry-compact .header-signin {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 8px 0 8px 24px;
+  border-left: 1px solid #5a5a55;
+  border-radius: 0;
+  min-height: 40px;
+}
+.viewer-entry-compact .form-error {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  width: 260px;
+  z-index: 20;
+}
+.guest-login-panel {
+  margin: 28px 0;
+  padding: 24px 0;
+  border-block: 1px solid var(--line);
+}
+.guest-login-panel .viewer-entry,
+.guest-login-panel .button {
+  width: 100%;
+}
+.guest-login-panel p {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 14px;
+}
+.credential-login {
+  font-size: 12px;
+  margin-bottom: 25px;
+}
+.credential-login summary {
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+@media (max-width: 420px) {
+  .viewer-entry-compact .header-signin {
+    display: inline-flex;
+    padding-left: 12px;
+    font-size: 10px;
+    gap: 8px;
+  }
+}
 @theme inline {
   --color-background: var(--paper);
   --color-foreground: var(--ink);

@@ -35,9 +35,10 @@ This is **synthetic workshop data**, not a production benefit system. Its 150
 participants, six programs and six months of records demonstrate an actual
 persisted API and UI without inventing the unresolved financial rules.
 
-The account is `viewer`. The facilitator distributes its credential privately.
-Secrets are held in the new private Key Vault, not in Git, browser storage,
-application logs or this README.
+Enter the credentials provided by the facilitator. The account determines the
+role: `admin` is reserved for the facilitator and `viewer` is read only. Sessions
+and permissions remain server-enforced. Passwords stay in Key Vault and are not
+embedded in the UI, source or browser storage.
 
 See [viewer operations](docs/operations/viewer.md), the
 [viewer specification](specs/002-viewer-platform/spec.md), and
