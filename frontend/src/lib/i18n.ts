@@ -36,7 +36,7 @@ const en = {
     "The selected role must match the account. Viewer is read only; the current modern administrator also cannot execute unresolved financial operations.",
   loginPending: "Signing in…",
   invalidCredentials: "The username, password or access type is incorrect.",
-  rateLimited: "Too many attempts. Wait a minute before trying again.",
+  rateLimited: "Too many attempts. Wait five minutes before trying again.",
   unavailable: "The service is unavailable. Please try again shortly.",
   invalidInput: "Check the information and try again.",
   overview: "Overview",
@@ -226,7 +226,7 @@ const es: typeof en = {
   invalidCredentials:
     "El usuario, la contraseña o el tipo de acceso son incorrectos.",
   rateLimited:
-    "Demasiados intentos. Espere un minuto antes de volver a intentarlo.",
+    "Demasiados intentos. Espere cinco minutos antes de volver a intentarlo.",
   unavailable: "El servicio no está disponible. Inténtelo de nuevo en breve.",
   invalidInput: "Revise la información e inténtelo de nuevo.",
   overview: "Visión general",
@@ -417,7 +417,7 @@ const pt: typeof en = {
   invalidCredentials:
     "O usuário, a senha ou o tipo de acesso estão incorretos.",
   rateLimited:
-    "Muitas tentativas. Aguarde um minuto antes de tentar novamente.",
+    "Muitas tentativas. Aguarde cinco minutos antes de tentar novamente.",
   unavailable: "O serviço está indisponível. Tente novamente em instantes.",
   invalidInput: "Confira as informações e tente novamente.",
   overview: "Visão geral",

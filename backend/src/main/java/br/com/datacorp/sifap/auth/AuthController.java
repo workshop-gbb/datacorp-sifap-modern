@@ -78,7 +78,10 @@ class AuthController {
         String role = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
             .filter(value -> value.startsWith("ROLE_")).map(value -> value.substring(5))
             .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "NO_ROLE"));
-        return new User(auth.getName(), accounts.get(role).displayName(), role);
+        Account account = accounts.get(role);
+        if (account == null)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "UNKNOWN_ROLE");
+        return new User(auth.getName(), account.displayName(), role);
     }
 
     private synchronized void limit(String source) {

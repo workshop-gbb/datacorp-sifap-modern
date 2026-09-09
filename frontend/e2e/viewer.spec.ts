@@ -8,7 +8,7 @@ function credentials(role: "ADMIN" | "VIEWER") {
     const data = JSON.parse(readFileSync(file, "utf8"));
     const username = data[`SIFAP_${role}_USERNAME`];
     const password = data[`SIFAP_${role}_PASSWORD`];
-    if (typeof password !== "string")
+    if (typeof username !== "string" || typeof password !== "string")
       throw new Error(`Missing ${role} test credential`);
     return { username, password };
   }

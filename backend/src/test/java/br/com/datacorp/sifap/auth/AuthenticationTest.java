@@ -10,6 +10,8 @@ import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.server.ResponseStatusException;
 
 class AuthenticationTest {
@@ -65,5 +67,15 @@ class AuthenticationTest {
         assertThrows(ResponseStatusException.class, () ->
             controller.login(new AuthController.Login("admin", "admin-pass", "VIEWER"), request));
         verifyNoInteractions(encoder);
+    }
+
+    @Test void should_reject_an_unknown_token_role_instead_of_failing() { // REQ-122
+        var controller = new AuthController(mock(PasswordEncoder.class), mock(JwtEncoder.class),
+            "viewer", "$2a$12$" + "v".repeat(53),
+            "admin", "$2a$12$" + "a".repeat(53));
+        var auth = new TestingAuthenticationToken("future", null,
+            java.util.List.of(new SimpleGrantedAuthority("ROLE_FUTURE")));
+        var error = assertThrows(ResponseStatusException.class, () -> controller.me(auth));
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatusCode());
     }
 }
