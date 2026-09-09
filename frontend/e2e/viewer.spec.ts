@@ -2,31 +2,34 @@ import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { dictionary, locales, type Locale } from "../src/lib/i18n";
 
-function credentials(): { username: string; password: string } {
-  if (process.env.SIFAP_TEST_SECRET_FILE) {
-    const data = JSON.parse(
-      readFileSync(process.env.SIFAP_TEST_SECRET_FILE, "utf8"),
-    );
-    if (typeof data.SIFAP_VIEWER_PASSWORD !== "string")
-      throw new Error("Missing test credential");
-    return {
-      username: data.SIFAP_VIEWER_USERNAME,
-      password: data.SIFAP_VIEWER_PASSWORD,
-    };
+function credentials(role: "ADMIN" | "VIEWER") {
+  const file = process.env.SIFAP_TEST_SECRET_FILE;
+  if (file) {
+    const data = JSON.parse(readFileSync(file, "utf8"));
+    const username = data[`SIFAP_${role}_USERNAME`];
+    const password = data[`SIFAP_${role}_PASSWORD`];
+    if (typeof username !== "string" || typeof password !== "string")
+      throw new Error(`Missing ${role} test credential`);
+    return { username, password };
   }
-  if (!process.env.SIFAP_VIEWER_PASSWORD)
-    throw new Error("Provide a protected test credential.");
+  const password = process.env[`SIFAP_${role}_PASSWORD`];
+  if (!password) throw new Error("Provide protected test credentials.");
   return {
-    username: process.env.SIFAP_VIEWER_USERNAME ?? "viewer",
-    password: process.env.SIFAP_VIEWER_PASSWORD,
+    username: process.env[`SIFAP_${role}_USERNAME`] ?? role.toLowerCase(),
+    password,
   };
 }
-async function login(page: Page, locale: Locale) {
+
+async function login(
+  page: Page,
+  locale: Locale,
+  role: "ADMIN" | "VIEWER" = "VIEWER",
+) {
   const d = dictionary(locale);
-  const access = credentials();
+  const account = credentials(role);
   await page.goto(`/${locale}/login`);
-  await page.getByLabel(d.username, { exact: true }).fill(access.username);
-  await page.getByLabel(d.password, { exact: true }).fill(access.password);
+  await page.getByLabel(d.username, { exact: true }).fill(account.username);
+  await page.getByLabel(d.password, { exact: true }).fill(account.password);
   await page.getByRole("button", { name: d.signIn, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${locale}/dashboard$`));
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
@@ -174,14 +177,34 @@ test("invalid login and forged session do not grant access", async ({
   await expect(page).toHaveURL(/\/en\/login\?expired=1$/);
 });
 
+test("administrator credentials grant only the configured administrator identity", async ({
+  page,
+  request,
+}) => {
+  // REQ-121 REQ-122
+  const d = dictionary("en");
+  await login(page, "en", "ADMIN");
+  await expect(page.getByText(d.administrator, { exact: true })).toBeVisible();
+  const viewer = credentials("VIEWER");
+  const viewerLogin = await request.post(
+    `${process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080"}/api/v1/auth/login`,
+    {
+      data: { username: viewer.username, password: viewer.password },
+    },
+  );
+  expect(viewerLogin.status()).toBe(200);
+  expect((await viewerLogin.json()).user.role).toBe("VIEWER");
+});
+
 test("API enforces viewer permissions and reconciles records", async ({
   request,
 }) => {
   // REQ-104 REQ-105 REQ-106 REQ-108 REQ-112
   const base = process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080";
   expect((await request.get(`${base}/api/v1/payments`)).status()).toBe(401);
+  const viewer = credentials("VIEWER");
   const loginResponse = await request.post(`${base}/api/v1/auth/login`, {
-    data: credentials(),
+    data: { username: viewer.username, password: viewer.password },
   });
   expect(loginResponse.status()).toBe(200);
   const session = await loginResponse.json();

@@ -7,6 +7,7 @@ import { isLocale } from "@/lib/i18n";
 export interface LoginState {
   error?: "invalidCredentials" | "rateLimited" | "unavailable" | "invalidInput";
 }
+
 export async function login(
   _state: LoginState,
   form: FormData,
@@ -22,6 +23,7 @@ export async function login(
     password.length > 128
   )
     return { error: "invalidInput" };
+
   let response: Response;
   try {
     response = await fetch(apiUrl("/auth/login"), {
@@ -44,6 +46,7 @@ export async function login(
   if (response.status === 401) return { error: "invalidCredentials" };
   if (response.status === 429) return { error: "rateLimited" };
   if (!response.ok) return { error: "unavailable" };
+
   const session: unknown = await response.json();
   if (
     typeof session !== "object" ||
@@ -56,6 +59,7 @@ export async function login(
     session.expiresIn > 3600
   )
     throw new Error("Invalid authentication contract");
+
   (await cookies()).set(SESSION_COOKIE, session.accessToken, {
     httpOnly: true,
     secure:
@@ -67,6 +71,7 @@ export async function login(
   });
   redirect(`/${locale}/dashboard`);
 }
+
 export async function logout(form: FormData) {
   const requested = String(form.get("locale") ?? "");
   const locale = isLocale(requested) ? requested : "pt-BR";

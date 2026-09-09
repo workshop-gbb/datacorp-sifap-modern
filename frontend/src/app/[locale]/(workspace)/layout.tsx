@@ -16,7 +16,7 @@ export default async function WorkspaceLayout({
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   const d = dictionary(locale);
-  await api<User>("/auth/me", locale);
+  const user = await api<User>("/auth/me", locale);
   return (
     <div className="workspace-shell">
       <a href="#main" className="skip-link">
@@ -33,7 +33,7 @@ export default async function WorkspaceLayout({
             <LocaleSwitch locale={locale} />
             <span className="user-role">
               <ShieldCheck size={15} />
-              {d.viewer}
+              {user.role === "ADMIN" ? d.administrator : d.viewer}
             </span>
             <form action={logout}>
               <input type="hidden" name="locale" value={locale} />

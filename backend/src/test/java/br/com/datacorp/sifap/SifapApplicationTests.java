@@ -24,6 +24,7 @@ class SifapApplicationTests {
 	static void configuration(DynamicPropertyRegistry props) {
 		props.add("sifap.jwt.secret", () -> "test-only-not-a-deployment-secret-12345678");
 		props.add("sifap.viewer.password-hash", () -> new BCryptPasswordEncoder().encode("test-only"));
+		props.add("sifap.admin.password-hash", () -> new BCryptPasswordEncoder().encode("admin-test-only"));
 		props.add("spring.datasource.url", () -> "jdbc:postgresql://unused/test");
 		props.add("spring.datasource.username", () -> "unused");
 		props.add("spring.datasource.password", () -> "unused");
@@ -32,7 +33,6 @@ class SifapApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-
 	@Test void should_deny_anonymous_records() throws Exception { // REQ-103 REQ-104
 		http.perform(get("/api/v1/dashboard")).andExpect(status().isUnauthorized());
 	}
@@ -76,6 +76,14 @@ class SifapApplicationTests {
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
 			.content("{\"username\":\"viewer\",\"password\":\"wrong\"}"))
 			.andExpect(status().isUnauthorized());
+		// REQ-122: client role data is ignored; the account remains VIEWER.
+		http.perform(post("/api/v1/auth/login").contentType("application/json")
+			.content("{\"username\":\"viewer\",\"password\":\"test-only\",\"role\":\"ADMIN\"}"))
+			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("VIEWER"));
+		http.perform(post("/api/v1/auth/login").contentType("application/json")
+			.content("{\"username\":\"admin\",\"password\":\"admin-test-only\"}"))
+			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("ADMIN"));
+		http.perform(post("/api/v1/auth/viewer")).andExpect(status().isUnauthorized());
 	}
 	@Test void should_expose_consistent_details_and_report_views() throws Exception { // REQ-105 REQ-106 REQ-107 REQ-108
 		var viewer = jwt().authorities(new SimpleGrantedAuthority("ROLE_VIEWER"));

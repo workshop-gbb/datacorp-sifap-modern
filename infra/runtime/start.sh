@@ -16,7 +16,7 @@ response="$(printf 'header = "Authorization: Bearer %s"\n' "$token" |
     "https://$vault.vault.azure.net/secrets/workshop-runtime?api-version=7.4")"
 unset token
 printf '%s' "$response" | jq -er '.value | fromjson | to_entries[] |
-  select(.key != "SIFAP_VIEWER_PASSWORD") |
+  select(.key != "SIFAP_VIEWER_PASSWORD" and .key != "SIFAP_ADMIN_PASSWORD") |
   if (.key | test("^[A-Z_]+$")) and (.value | type == "string") and
     (.value | test("^[a-zA-Z0-9_.$/-]+$"))
   then "\(.key)=\u0027\(.value)\u0027" else error("Invalid runtime secret format") end' > /run/sifap-modern.runtime

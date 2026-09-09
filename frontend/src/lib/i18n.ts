@@ -5,6 +5,7 @@ export function isLocale(value: string): value is Locale {
 }
 
 const en = {
+  administrator: "Administrator",
   app: "SIFAP",
   edition: "Modern platform",
   viewer: "Viewer",
@@ -24,15 +25,15 @@ const en = {
   password: "Password",
   loginTitle: "Your perspective starts here.",
   loginCopy:
-    "Use the viewer credentials shared by your facilitator to explore the workshop environment.",
+    "Enter the credentials shared by your facilitator. The account determines the access level.",
   loginAside: "Every detail. In context.",
   loginAsideCopy:
     "From an overview to the story behind a record. One connected experience, designed for understanding.",
   loginHelp:
-    "Access is provided by your facilitator. This account cannot create, edit or execute payments.",
+    "Viewer is read only. The administrator account is reserved for the facilitator and still cannot execute unresolved financial operations.",
   loginPending: "Signing in…",
   invalidCredentials: "The username or password is incorrect.",
-  rateLimited: "Too many attempts. Wait a minute before trying again.",
+  rateLimited: "Too many attempts. Wait five minutes before trying again.",
   unavailable: "The service is unavailable. Please try again shortly.",
   invalidInput: "Check the information and try again.",
   overview: "Overview",
@@ -189,6 +190,7 @@ const en = {
 };
 
 const es: typeof en = {
+  administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",
@@ -208,16 +210,16 @@ const es: typeof en = {
   password: "Contraseña",
   loginTitle: "Su perspectiva comienza aquí.",
   loginCopy:
-    "Utilice las credenciales viewer compartidas por su facilitador para explorar el entorno del taller.",
+    "Introduzca las credenciales compartidas por su facilitador. La cuenta determina el nivel de acceso.",
   loginAside: "Cada detalle. En contexto.",
   loginAsideCopy:
     "De la visión general a la historia de un registro. Una experiencia conectada, diseñada para comprender.",
   loginHelp:
-    "Su facilitador proporciona el acceso. Esta cuenta no puede crear, editar ni ejecutar pagos.",
+    "Viewer es de solo lectura. La cuenta administradora está reservada al facilitador y tampoco ejecuta operaciones financieras aún no definidas.",
   loginPending: "Accediendo…",
   invalidCredentials: "El usuario o la contraseña son incorrectos.",
   rateLimited:
-    "Demasiados intentos. Espere un minuto antes de volver a intentarlo.",
+    "Demasiados intentos. Espere cinco minutos antes de volver a intentarlo.",
   unavailable: "El servicio no está disponible. Inténtelo de nuevo en breve.",
   invalidInput: "Revise la información e inténtelo de nuevo.",
   overview: "Visión general",
@@ -375,6 +377,7 @@ const es: typeof en = {
 };
 
 const pt: typeof en = {
+  administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",
@@ -394,16 +397,16 @@ const pt: typeof en = {
   password: "Senha",
   loginTitle: "Sua perspectiva começa aqui.",
   loginCopy:
-    "Use as credenciais viewer compartilhadas pelo facilitador para explorar o ambiente da imersão.",
+    "Informe as credenciais compartilhadas pelo facilitador. A conta determina o nível de acesso.",
   loginAside: "Cada detalhe. Em contexto.",
   loginAsideCopy:
     "Da visão geral à história por trás de um registro. Uma experiência conectada, desenhada para compreender.",
   loginHelp:
-    "O acesso é fornecido pelo facilitador. Esta conta não pode criar, editar ou executar pagamentos.",
+    "Viewer é somente leitura. A conta administradora é reservada ao facilitador e também não executa operações financeiras ainda não definidas.",
   loginPending: "Entrando…",
   invalidCredentials: "O usuário ou a senha estão incorretos.",
   rateLimited:
-    "Muitas tentativas. Aguarde um minuto antes de tentar novamente.",
+    "Muitas tentativas. Aguarde cinco minutos antes de tentar novamente.",
   unavailable: "O serviço está indisponível. Tente novamente em instantes.",
   invalidInput: "Confira as informações e tente novamente.",
   overview: "Visão geral",
