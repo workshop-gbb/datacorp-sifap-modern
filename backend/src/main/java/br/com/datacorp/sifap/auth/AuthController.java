@@ -51,12 +51,16 @@ class AuthController {
 
     @PostMapping("/login")
     ResponseEntity<Session> login(@Valid @RequestBody Login request, HttpServletRequest http) {
-        limit(http.getRemoteAddr());
+        String source = http.getRemoteAddr();
+        limit(source);
         Account account = accounts.get(request.role());
         // The password is always verified so a wrong role cannot be told apart by timing.
         boolean validPassword = passwords.matches(request.password(), account.passwordHash());
         if (!account.username().equals(request.username()) || !validPassword)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS");
+        synchronized (this) {
+            attempts.remove(source);
+        }
         Instant now = Instant.now();
         var claims = JwtClaimsSet.builder().issuer(SecurityConfiguration.ISSUER)
             .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(account.username())
