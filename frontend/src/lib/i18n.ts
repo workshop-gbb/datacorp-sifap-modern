@@ -5,12 +5,10 @@ export function isLocale(value: string): value is Locale {
 }
 
 const en = {
-  enterViewer: "Enter as viewer",
-  directViewerCopy:
-    "One click to explore the workshop. No username or password required.",
-  directViewerNote:
-    "Public access to synthetic data only. You cannot edit records, administer the system or execute payments.",
-  credentialAccess: "Sign in with a workshop credential",
+  accessType: "Access type",
+  adminOption: "Administrator \u2014 full access",
+  viewerOption: "Viewer \u2014 read only",
+  administrator: "Administrator",
   app: "SIFAP",
   edition: "Modern platform",
   viewer: "Viewer",
@@ -30,14 +28,14 @@ const en = {
   password: "Password",
   loginTitle: "Your perspective starts here.",
   loginCopy:
-    "Use the viewer credentials shared by your facilitator to explore the workshop environment.",
+    "Choose the access type and enter the credentials shared by your facilitator.",
   loginAside: "Every detail. In context.",
   loginAsideCopy:
     "From an overview to the story behind a record. One connected experience, designed for understanding.",
   loginHelp:
-    "Access is provided by your facilitator. This account cannot create, edit or execute payments.",
+    "The selected role must match the account. Viewer is read only; the current modern administrator also cannot execute unresolved financial operations.",
   loginPending: "Signing in…",
-  invalidCredentials: "The username or password is incorrect.",
+  invalidCredentials: "The username, password or access type is incorrect.",
   rateLimited: "Too many attempts. Wait a minute before trying again.",
   unavailable: "The service is unavailable. Please try again shortly.",
   invalidInput: "Check the information and try again.",
@@ -195,12 +193,10 @@ const en = {
 };
 
 const es: typeof en = {
-  enterViewer: "Entrar como viewer",
-  directViewerCopy:
-    "Un clic para explorar el taller. Sin usuario ni contraseña.",
-  directViewerNote:
-    "Acceso público solo a datos sintéticos. No permite editar registros, administrar el sistema ni ejecutar pagos.",
-  credentialAccess: "Acceder con una credencial del taller",
+  accessType: "Tipo de acceso",
+  adminOption: "Administrador \u2014 acceso completo",
+  viewerOption: "Viewer \u2014 solo lectura",
+  administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",
@@ -220,14 +216,15 @@ const es: typeof en = {
   password: "Contraseña",
   loginTitle: "Su perspectiva comienza aquí.",
   loginCopy:
-    "Utilice las credenciales viewer compartidas por su facilitador para explorar el entorno del taller.",
+    "Elija el tipo de acceso e introduzca las credenciales compartidas por su facilitador.",
   loginAside: "Cada detalle. En contexto.",
   loginAsideCopy:
     "De la visión general a la historia de un registro. Una experiencia conectada, diseñada para comprender.",
   loginHelp:
-    "Su facilitador proporciona el acceso. Esta cuenta no puede crear, editar ni ejecutar pagos.",
+    "El perfil seleccionado debe coincidir con la cuenta. Viewer es de solo lectura; el administrador moderno tampoco ejecuta operaciones financieras aún no definidas.",
   loginPending: "Accediendo…",
-  invalidCredentials: "El usuario o la contraseña son incorrectos.",
+  invalidCredentials:
+    "El usuario, la contraseña o el tipo de acceso son incorrectos.",
   rateLimited:
     "Demasiados intentos. Espere un minuto antes de volver a intentarlo.",
   unavailable: "El servicio no está disponible. Inténtelo de nuevo en breve.",
@@ -387,11 +384,10 @@ const es: typeof en = {
 };
 
 const pt: typeof en = {
-  enterViewer: "Entrar como viewer",
-  directViewerCopy: "Um clique para explorar a imersão. Sem usuário ou senha.",
-  directViewerNote:
-    "Acesso público somente a dados sintéticos. Não permite editar registros, administrar o sistema ou executar pagamentos.",
-  credentialAccess: "Entrar com uma credencial da imersão",
+  accessType: "Tipo de acesso",
+  adminOption: "Administrador \u2014 acesso completo",
+  viewerOption: "Viewer \u2014 somente leitura",
+  administrator: "Administrador",
   app: "SIFAP",
   edition: "Plataforma moderna",
   viewer: "Viewer",
@@ -411,14 +407,15 @@ const pt: typeof en = {
   password: "Senha",
   loginTitle: "Sua perspectiva começa aqui.",
   loginCopy:
-    "Use as credenciais viewer compartilhadas pelo facilitador para explorar o ambiente da imersão.",
+    "Escolha o tipo de acesso e informe as credenciais compartilhadas pelo facilitador.",
   loginAside: "Cada detalhe. Em contexto.",
   loginAsideCopy:
     "Da visão geral à história por trás de um registro. Uma experiência conectada, desenhada para compreender.",
   loginHelp:
-    "O acesso é fornecido pelo facilitador. Esta conta não pode criar, editar ou executar pagamentos.",
+    "O perfil selecionado deve corresponder à conta. Viewer é somente leitura; o administrador moderno também não executa operações financeiras ainda não definidas.",
   loginPending: "Entrando…",
-  invalidCredentials: "O usuário ou a senha estão incorretos.",
+  invalidCredentials:
+    "O usuário, a senha ou o tipo de acesso estão incorretos.",
   rateLimited:
     "Muitas tentativas. Aguarde um minuto antes de tentar novamente.",
   unavailable: "O serviço está indisponível. Tente novamente em instantes.",

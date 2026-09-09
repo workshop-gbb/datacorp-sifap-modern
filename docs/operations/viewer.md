@@ -4,21 +4,20 @@
 
 | Environment | URL | Student role |
 |---|---|---|
-| Modern | <https://sifap-modern-fiepi9.eastus2.cloudapp.azure.com/pt-BR> | `viewer`, application-enforced read only |
-| Legacy | <https://sifap-lab-438k30.eastus2.cloudapp.azure.com/terminal/> | `viewer`, pinned `VIEWBENF;FIN` session |
+| Modern | <https://sifap-modern-fiepi9.eastus2.cloudapp.azure.com/pt-BR> | `admin` or `viewer`; current business endpoints remain read only |
+| Legacy | <https://sifap-lab-438k30.eastus2.cloudapp.azure.com/> | `admin` operator access or `viewer` pinned to `VIEWBENF;FIN` |
 
 Modern routes begin with `/en`, `/es`, or `/pt-BR`. After sign-in, students can
 explore the dashboard, beneficiaries, programs, payments, reports and integrations.
 The language selector retains the route and filters.
 
-Click **Enter as viewer** in either environment to create a restricted classroom
-session without entering a username or password. The legacy terminal and modern
-dashboard use independent host-scoped sessions. Any public visitor can inspect
-the synthetic data in this explicitly enabled workshop mode.
+Choose Administrator or Viewer on either sign-in page and enter the credentials
+supplied by the facilitator. The legacy terminal and modern dashboard use
+independent host-scoped sessions. A selected role is not trusted: the server
+rejects credentials bound to another role.
 
-Operator administration remains credential-protected. The modern credential
-form is retained separately for compatibility; no password is embedded in the
-public landing, URL, browser storage or client code.
+Passwords are stored as hashes in runtime configuration read from Key Vault.
+They are not embedded in the public landing, URL, browser storage or client code.
 
 ## What the workshop does and does not demonstrate
 
@@ -110,9 +109,9 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-The classroom browser tests use the actual one-click viewer flow and require no
-shared password. They test both origins, role-injection denial, logout and the
-legacy Natural iframe. Browser traces/video remain disabled.
+The classroom browser tests receive credentials from a protected environment or
+private test file. They test both roles, role-injection denial, logout and the
+actual legacy Natural iframe. Browser traces/video remain disabled.
 
 ## Live verification
 
@@ -131,8 +130,8 @@ reporting without treating an unrelated upstream outage as fabricated success.
 
 The GitHub Actions `Viewer application` workflow runs backend, frontend and
 Terraform gates. Its live job uses repository variable `SIFAP_BASE_URL` and
-the public viewer session operation, and runs only after those gates pass.
-No shared account password is injected into the live viewer job.
+protected repository secrets, and runs only after those gates pass. Credentials
+are never printed or committed.
 
 ## Redeployment and recovery
 

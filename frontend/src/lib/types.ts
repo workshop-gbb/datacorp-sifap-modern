@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   displayName: string;
-  role: "VIEWER";
+  role: "ADMIN" | "VIEWER";
 }
 export interface Dataset {
   id: string;

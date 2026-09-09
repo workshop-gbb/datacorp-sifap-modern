@@ -16,7 +16,7 @@ services:
     restart: unless-stopped
     networks: [database]
   api:
-    image: ${SIFAP_API_IMAGE:-sifap-api:workshop-v4}
+    image: ${SIFAP_API_IMAGE:-sifap-api:workshop-v5}
     build: ./backend
     environment:
       JDBC_URL: jdbc:postgresql://db:5432/sifap
@@ -24,8 +24,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
       SIFAP_VIEWER_USERNAME: ${SIFAP_VIEWER_USERNAME:-viewer}
       SIFAP_VIEWER_PASSWORD_HASH: ${SIFAP_VIEWER_PASSWORD_HASH:?Set a bcrypt hash}
+      SIFAP_ADMIN_USERNAME: ${SIFAP_ADMIN_USERNAME:-admin}
+      SIFAP_ADMIN_PASSWORD_HASH: ${SIFAP_ADMIN_PASSWORD_HASH:?Set an administrator bcrypt hash}
       SIFAP_JWT_SECRET: ${SIFAP_JWT_SECRET:?Set a random signing secret}
-      SIFAP_GUEST_VIEWER_ENABLED: "true"
     depends_on:
       db:
         condition: service_healthy
@@ -36,11 +37,10 @@ services:
     restart: unless-stopped
     networks: [database, application]
   frontend:
-    image: ${SIFAP_FRONTEND_IMAGE:-sifap-viewer:workshop-v4}
+    image: ${SIFAP_FRONTEND_IMAGE:-sifap-viewer:workshop-v5}
     build: ./frontend
     environment:
       API_URL: http://api:8080
-      SIFAP_GUEST_VIEWER_ENABLED: "true"
     depends_on:
       api:
         condition: service_healthy

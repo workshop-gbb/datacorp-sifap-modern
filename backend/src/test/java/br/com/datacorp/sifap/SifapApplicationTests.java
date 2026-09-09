@@ -23,8 +23,8 @@ class SifapApplicationTests {
 	@DynamicPropertySource
 	static void configuration(DynamicPropertyRegistry props) {
 		props.add("sifap.jwt.secret", () -> "test-only-not-a-deployment-secret-12345678");
-		props.add("sifap.viewer.guest-enabled", () -> true);
 		props.add("sifap.viewer.password-hash", () -> new BCryptPasswordEncoder().encode("test-only"));
+		props.add("sifap.admin.password-hash", () -> new BCryptPasswordEncoder().encode("admin-test-only"));
 		props.add("spring.datasource.url", () -> "jdbc:postgresql://unused/test");
 		props.add("spring.datasource.username", () -> "unused");
 		props.add("spring.datasource.password", () -> "unused");
@@ -33,24 +33,6 @@ class SifapApplicationTests {
 	@Test
 	void contextLoads() {
 	}
-	@Test void should_issue_only_viewer_authority_without_a_password() throws Exception { // REQ-117 REQ-118
-		var result = http.perform(post("/api/v1/auth/viewer")).andExpect(status().isOk())
-			.andExpect(jsonPath("$.user.role").value("VIEWER"))
-			.andExpect(jsonPath("$.expiresIn").value(3600)).andReturn();
-		String token = tools.jackson.databind.json.JsonMapper.builder().build()
-			.readTree(result.getResponse().getContentAsString()).path("accessToken").asString();
-		http.perform(get("/api/v1/auth/me").header("Authorization", "Bearer " + token))
-			.andExpect(status().isOk()).andExpect(jsonPath("$.role").value("VIEWER"));
-		for (var method : java.util.List.of("POST", "PUT", "PATCH", "DELETE")) {
-			http.perform(request(org.springframework.http.HttpMethod.valueOf(method), "/api/v1/programs")
-				.header("Authorization", "Bearer " + token)).andExpect(status().isForbidden());
-		}
-		http.perform(post("/api/v1/auth/viewer").contentType("application/json")
-			.content("{\"role\":\"ADMIN\"}")).andExpect(status().isBadRequest());
-		http.perform(post("/api/v1/auth/viewer?role=ADMIN")).andExpect(status().isBadRequest());
-		http.perform(get("/api/v1/auth/viewer")).andExpect(status().isUnauthorized());
-	}
-
 	@Test void should_deny_anonymous_records() throws Exception { // REQ-103 REQ-104
 		http.perform(get("/api/v1/dashboard")).andExpect(status().isUnauthorized());
 	}
@@ -88,12 +70,19 @@ class SifapApplicationTests {
 	}
 	@Test void should_authenticate_real_viewer_credentials() throws Exception { // REQ-103
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
-			.content("{\"username\":\"viewer\",\"password\":\"test-only\"}"))
+			.content("{\"username\":\"viewer\",\"password\":\"test-only\",\"role\":\"VIEWER\"}"))
 			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("VIEWER"))
 			.andExpect(jsonPath("$.accessToken").isString());
 		http.perform(post("/api/v1/auth/login").contentType("application/json")
-			.content("{\"username\":\"viewer\",\"password\":\"wrong\"}"))
+			.content("{\"username\":\"viewer\",\"password\":\"wrong\",\"role\":\"VIEWER\"}"))
 			.andExpect(status().isUnauthorized());
+		http.perform(post("/api/v1/auth/login").contentType("application/json")
+			.content("{\"username\":\"viewer\",\"password\":\"test-only\",\"role\":\"ADMIN\"}"))
+			.andExpect(status().isUnauthorized());
+		http.perform(post("/api/v1/auth/login").contentType("application/json")
+			.content("{\"username\":\"admin\",\"password\":\"admin-test-only\",\"role\":\"ADMIN\"}"))
+			.andExpect(status().isOk()).andExpect(jsonPath("$.user.role").value("ADMIN"));
+		http.perform(post("/api/v1/auth/viewer")).andExpect(status().isUnauthorized());
 	}
 	@Test void should_expose_consistent_details_and_report_views() throws Exception { // REQ-105 REQ-106 REQ-107 REQ-108
 		var viewer = jwt().authorities(new SimpleGrantedAuthority("ROLE_VIEWER"));

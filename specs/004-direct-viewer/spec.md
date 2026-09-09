@@ -1,4 +1,4 @@
-# Feature 004: Public workshop landing and one-click viewer access
+# Feature 004: Role-based workshop sign-in
 
 **REQ-116** — When a visitor opens the legacy origin, the system shall display a
 public, responsive landing page describing SIFAP in the shared editorial design
@@ -7,29 +7,30 @@ language with a dark retro-terminal treatment and EN/ES/PT-BR selection.
 - `source_legacy:` [GREENFIELD] The user requested a retro legacy landing consistent with the modern application and workshop site.
 - Acceptance: no Basic Auth dialog on the landing; local fonts, accessible controls and a clearly non-interactive terminal illustration.
 
-**REQ-117** — When a visitor explicitly selects the access button in either
-workshop, the server shall create a time-bounded VIEWER session without requiring
-the visitor to enter or receive an account password.
+**REQ-121** — When a visitor signs in to either workshop, the system shall require
+an access type, username and password and shall authenticate the selected account
+without exposing its password or hash in the browser or repository.
 
-- `source_legacy:` [GREENFIELD] The user explicitly authorized one-click public viewer access to the synthetic classroom environments.
-- Acceptance: a single click opens the dashboard or legacy viewer terminal; session cookies are HttpOnly, Secure on HTTPS and same-site.
+- `source_legacy:` [GREENFIELD] The user requires explicit administrator/viewer credential sign-in for both running environments.
+- Acceptance: the selector offers ADMIN and VIEWER; invalid credentials fail generically; sessions are time-bounded and cookies are HttpOnly and Secure.
 
-**REQ-118** — While a guest viewer is signed in, the systems shall reject
-administrative access and business writes regardless of client-supplied role,
-identity, headers or URL parameters.
+**REQ-122** — When credentials are valid, the systems shall grant only the role
+bound to that account, regardless of the role selected or supplied in headers,
+cookies, URL parameters or request bodies.
 
-- `source_legacy:` [GREENFIELD] Removing the classroom password prompt must not remove server-side permission enforcement.
-- Acceptance: modern mutations return 403; the legacy session only reaches the existing VIEWBENF terminal; Adabas administration remains protected.
+- `source_legacy:` [GREENFIELD] Selecting an access type must not allow a viewer credential to escalate to administrator.
+- Acceptance: legacy VIEWER reaches only VIEWBENF; ADMIN reaches the operator terminal and Adabas console; modern tokens carry the authenticated role and business mutations remain denied.
 
-**REQ-119** — When a viewer signs out or presents a forged/expired session, the
+**REQ-123** — When a user signs out or presents a forged/expired session, the
 system shall deny further protected requests and offer the public entry point
 without creating a session on a GET request.
 
 - `source_legacy:` [GREENFIELD] Explicit user gestures, bounded sessions and logout are required for predictable direct access.
 - Acceptance: login and logout use POST; cross-origin requests are rejected; no password, token or administrative credential is embedded in public assets.
 
-**REQ-120** — Where public viewer access is not enabled, the modern system shall
-retain credential-based access and shall not issue guest sessions.
+**REQ-124** — When a Natural viewer terminal disconnects, the system shall end
+the associated Natural process so it does not consume the limited buffer-pool
+session capacity.
 
-- `source_legacy:` [GREENFIELD] This is an opt-in synthetic-workshop behavior, not a production authentication default.
-- Acceptance: the application flag defaults false; the workshop deployment explicitly enables it; both cases are tested.
+- `source_legacy:` [GREENFIELD] Browser disconnections leave container-exec Natural sessions orphaned unless the session driver explicitly cleans them up.
+- Acceptance: repeated connect/disconnect cycles do not exhaust the Natural CE user limit; a real VIEWBENF screen renders for the viewer.

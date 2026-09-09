@@ -8,6 +8,7 @@ import java.util.*;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
@@ -17,68 +18,70 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/v1/auth")
 class AuthController {
+    private static final long SESSION_SECONDS = 3600;
+    private static final String BCRYPT = "^\\$2[aby]\\$\\d{2}\\$.{53}$";
+
     private final PasswordEncoder passwords;
     private final JwtEncoder tokens;
-    private final String username;
-    private final String passwordHash;
-    private final boolean guestEnabled;
+    private final Map<String, Account> accounts;
     private final Map<String, Attempt> attempts = new HashMap<>();
-    private static final long SESSION_SECONDS = 3600;
+
+    private record Account(String username, String passwordHash, String displayName) {}
     private record Attempt(int count, long until) {}
-    record Login(@NotBlank @Size(max=64) String username, @NotBlank @Size(max=128) String password) {}
+
+    record Login(@NotBlank @Size(max = 64) String username,
+                 @NotBlank @Size(max = 128) String password,
+                 @NotBlank @Pattern(regexp = "ADMIN|VIEWER") String role) {}
     record User(String id, String displayName, String role) {}
     record Session(String accessToken, long expiresIn, User user) {}
 
     AuthController(PasswordEncoder passwords, JwtEncoder tokens,
-            @Value("${sifap.viewer.username}") String username,
-            @Value("${sifap.viewer.password-hash}") String passwordHash,
-            @Value("${sifap.viewer.guest-enabled:false}") boolean guestEnabled) {
-        if (!passwordHash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$"))
-            throw new IllegalArgumentException("A bcrypt viewer password hash is required");
+            @Value("${sifap.viewer.username}") String viewerUsername,
+            @Value("${sifap.viewer.password-hash}") String viewerHash,
+            @Value("${sifap.admin.username}") String adminUsername,
+            @Value("${sifap.admin.password-hash}") String adminHash) {
+        if (!viewerHash.matches(BCRYPT) || !adminHash.matches(BCRYPT))
+            throw new IllegalArgumentException("Both accounts require a bcrypt password hash");
         this.passwords = passwords;
         this.tokens = tokens;
-        this.username = username;
-        this.passwordHash = passwordHash;
-        this.guestEnabled = guestEnabled;
+        this.accounts = Map.of(
+            "VIEWER", new Account(viewerUsername, viewerHash, "Workshop viewer"),
+            "ADMIN", new Account(adminUsername, adminHash, "Workshop administrator"));
     }
+
     @PostMapping("/login")
     ResponseEntity<Session> login(@Valid @RequestBody Login request, HttpServletRequest http) {
         limit(http.getRemoteAddr());
-        boolean validPassword = passwords.matches(request.password(), passwordHash);
-        if (!username.equals(request.username()) || !validPassword)
+        Account account = accounts.get(request.role());
+        // The password is always verified so a wrong role cannot be told apart by timing.
+        boolean validPassword = passwords.matches(request.password(), account.passwordHash());
+        if (!account.username().equals(request.username()) || !validPassword)
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "INVALID_CREDENTIALS");
-        return session();
-    }
-
-    @PostMapping("/viewer")
-    ResponseEntity<Session> viewer(@RequestBody(required = false) Map<String, Object> input,
-            HttpServletRequest http) {
-        if (!guestEnabled) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "GUEST_ACCESS_DISABLED");
-        limit(http.getRemoteAddr());
-        if ((input != null && !input.isEmpty()) || http.getQueryString() != null)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "VIEWER_ACCESS_TAKES_NO_IDENTITY");
-        return session();
-    }
-
-    private ResponseEntity<Session> session() {
         Instant now = Instant.now();
         var claims = JwtClaimsSet.builder().issuer(SecurityConfiguration.ISSUER)
-            .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(username)
+            .audience(List.of(SecurityConfiguration.AUDIENCE)).subject(account.username())
             .issuedAt(now).expiresAt(now.plusSeconds(SESSION_SECONDS)).id(UUID.randomUUID().toString())
-            .claim("roles", List.of("VIEWER")).build();
+            .claim("roles", List.of(request.role())).build();
         String token = tokens.encode(JwtEncoderParameters.from(
             JwsHeader.with(MacAlgorithm.HS256).build(), claims)).getTokenValue();
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-            .body(new Session(token, SESSION_SECONDS, new User(username, "Workshop viewer", "VIEWER")));
+            .body(new Session(token, SESSION_SECONDS,
+                new User(account.username(), account.displayName(), request.role())));
     }
+
     @GetMapping("/me")
-    User me(Authentication auth) { return new User(auth.getName(), "Workshop viewer", "VIEWER"); }
+    User me(Authentication auth) {
+        String role = auth.getAuthorities().stream().map(GrantedAuthority::getAuthority)
+            .filter(value -> value.startsWith("ROLE_")).map(value -> value.substring(5))
+            .findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "NO_ROLE"));
+        return new User(auth.getName(), accounts.get(role).displayName(), role);
+    }
 
     private synchronized void limit(String source) {
         long now = System.currentTimeMillis();
         attempts.entrySet().removeIf(entry -> entry.getValue().until() < now);
-        Attempt attempt = attempts.getOrDefault(source, new Attempt(0, now + 60000));
-        if (attempt.count() >= 30 || attempts.size() >= 1024)
+        Attempt attempt = attempts.getOrDefault(source, new Attempt(0, now + 300000));
+        if (attempt.count() >= 20 || attempts.size() >= 1024)
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "RATE_LIMITED");
         attempts.put(source, new Attempt(attempt.count() + 1, attempt.until()));
     }

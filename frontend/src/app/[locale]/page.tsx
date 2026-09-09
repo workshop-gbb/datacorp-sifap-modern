@@ -14,7 +14,6 @@ import { PublicHeader } from "@/components/public-header";
 import { Brand } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 import { dictionary, isLocale } from "@/lib/i18n";
-import { ViewerButton } from "@/components/viewer-button";
 export default async function Landing({
   params,
 }: {
@@ -43,16 +42,12 @@ export default async function Landing({
             </h1>
             <p className="hero-description">{d.heroCopy}</p>
             <div className="hero-actions">
-              {process.env.SIFAP_GUEST_VIEWER_ENABLED === "true" ? (
-                <ViewerButton locale={locale} label={d.explore} />
-              ) : (
-                <Button asChild>
-                  <Link href={`/${locale}/login`}>
-                    {d.explore}
-                    <ArrowUpRight size={18} />
-                  </Link>
-                </Button>
-              )}
+              <Button asChild>
+                <Link href={`/${locale}/login`}>
+                  {d.explore}
+                  <ArrowUpRight size={18} />
+                </Link>
+              </Button>
               <a className="text-link" href="#experience">
                 {d.learn}
                 <ArrowDown size={16} />
@@ -190,16 +185,12 @@ export default async function Landing({
           <h2>{d.start}</h2>
           <p>{d.startCopy}</p>
         </div>
-        {process.env.SIFAP_GUEST_VIEWER_ENABLED === "true" ? (
-          <ViewerButton locale={locale} />
-        ) : (
-          <Button asChild>
-            <Link href={`/${locale}/login`}>
-              {d.signIn}
-              <ArrowUpRight size={18} />
-            </Link>
-          </Button>
-        )}
+        <Button asChild>
+          <Link href={`/${locale}/login`}>
+            {d.signIn}
+            <ArrowUpRight size={18} />
+          </Link>
+        </Button>
       </section>
       <footer className="public-footer container">
         <Brand locale={locale} />

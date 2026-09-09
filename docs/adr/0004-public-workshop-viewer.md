@@ -1,36 +1,35 @@
-# ADR-0004: Explicit one-click workshop viewer sessions
+# ADR-0004: Credentialed administrator and viewer sessions
 
 | Field | Value |
 |---|---|
 | Status | accepted for the synthetic workshop; review before main |
 | Date | 2026-09-08 |
-| Scope | REQ-116 through REQ-120 |
+| Scope | REQ-116 and REQ-121 through REQ-124 |
 
-The user explicitly requests direct viewer access without a credential prompt in
-both running workshop systems. This changes who can inspect the synthetic data:
-any visitor to the public workshop can become a viewer. It does not authenticate
-a real person's identity and must not be used for production benefit data.
+The user requires both running systems to authenticate with username, password
+and an explicit ADMIN/VIEWER selector. The selected value is a request, not an
+authorization decision: credentials are bound to one role on the server.
 
-The modern API adds an opt-in guest-session operation, disabled by default,
-issuing the existing Spring Security JWT with only VIEWER authority. Server
-actions store it in an HttpOnly cookie; no shared password is sent to a browser.
-Credential login remains available separately for compatibility.
+The modern API keeps one login operation and two independently hashed accounts.
+It issues the existing Spring Security JWT with the authenticated authority.
+Server actions store it in an HttpOnly cookie. No guest-session operation exists.
+The current modern API exposes consultation only, so ADMIN is a distinct identity
+but does not invent writes blocked by the open clarification gates.
 
-The legacy origin gets a small internal Node 24 session gateway using built-in
-HTTP and cryptographically random opaque session identifiers. It has no database,
-cloud credentials, Docker socket or admin credentials. The store is bounded and
-expires sessions after one hour. Caddy validates guest sessions before proxying
-only to the already restricted `ttyd-viewer`/`VIEWBENF` runtime. Operator Basic
-Auth remains separate; guest cookies cannot authorize operator/admin paths.
+The legacy origin gets a small internal Node 24 sign-in gateway using built-in
+HTTP, scrypt password hashes and cryptographically random opaque sessions. It has
+no database, cloud credentials or Docker socket. Caddy strips client role headers,
+validates the server session and sends VIEWER only to `ttyd-viewer`/`VIEWBENF`;
+ADMIN reaches the operator terminal and Adabas console.
 
-Session creation is an explicit same-origin POST, never a GET/prefetch. Logout
-invalidates the opaque legacy session and removes browser cookies. Existing
-legacy WebSocket streams are capped at one hour; the viewer page closes its
-iframe when navigating away. All this remains a read-only classroom environment.
+Sign-in is an explicit same-origin POST, never a GET/prefetch. Logout invalidates
+the session. Legacy WebSocket streams are capped at one hour. The restricted
+session driver terminates its Natural process when the browser disconnects,
+preventing orphan sessions from exhausting the Natural CE buffer pool.
 
-Alternatives rejected: putting the viewer password in HTML or a URL; silently
-removing authorization from terminal routes; using an admin account with hidden
-buttons; sharing a cross-origin cookie between the two applications.
+Alternatives rejected: storing plaintext passwords in Git or HTML; allowing the
+selector to define the granted role; using an admin account with hidden buttons;
+sharing a cross-origin session between applications.
 
 Node 24 is already the modern frontend's pinned LTS runtime. The legacy gateway
 uses that same image digest and no new npm dependencies. Its native test runner

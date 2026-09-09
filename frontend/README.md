@@ -27,10 +27,11 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-The tests use the public one-click viewer operation, not a shared password.
-Use `SIFAP_BASE_URL` and `SIFAP_API_BASE` to target the deployed HTTPS application
-instead of localhost, and `SIFAP_LEGACY_BASE_URL` for the retro legacy origin.
-No password or session token belongs in a test source file.
+Provide the ADMIN and VIEWER credentials through `SIFAP_TEST_SECRET_FILE` or
+protected `SIFAP_ADMIN_*` / `SIFAP_VIEWER_*` environment variables. Use
+`SIFAP_BASE_URL` and `SIFAP_API_BASE` for the modern origin and
+`SIFAP_LEGACY_BASE_URL` for the retro legacy origin. No password or session token
+belongs in a test source file.
 
 The tests cover all three locales, mobile/desktop layouts, actual sign-in,
 consultation, details, filtering, pagination, report download, logout and API

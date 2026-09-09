@@ -93,4 +93,9 @@ jobs:
         env:
           SIFAP_BASE_URL: ${{ vars.SIFAP_BASE_URL }}
           SIFAP_API_BASE: ${{ vars.SIFAP_BASE_URL }}
+          SIFAP_LEGACY_BASE_URL: https://sifap-lab-438k30.eastus2.cloudapp.azure.com
+          SIFAP_VIEWER_USERNAME: viewer
+          SIFAP_VIEWER_PASSWORD: ${{ secrets.SIFAP_VIEWER_PASSWORD }}
+          SIFAP_ADMIN_USERNAME: admin
+          SIFAP_ADMIN_PASSWORD: ${{ secrets.SIFAP_ADMIN_PASSWORD }}
         run: pnpm test:e2e

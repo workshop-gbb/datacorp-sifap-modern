@@ -7,6 +7,7 @@ import { isLocale } from "@/lib/i18n";
 export interface LoginState {
   error?: "invalidCredentials" | "rateLimited" | "unavailable" | "invalidInput";
 }
+
 export async function login(
   _state: LoginState,
   form: FormData,
@@ -14,39 +15,23 @@ export async function login(
   const locale = String(form.get("locale") ?? "");
   const username = String(form.get("username") ?? "").trim();
   const password = String(form.get("password") ?? "");
+  const role = String(form.get("role") ?? "");
   if (
     !isLocale(locale) ||
     !username ||
     username.length > 64 ||
     !password ||
-    password.length > 128
+    password.length > 128 ||
+    !["ADMIN", "VIEWER"].includes(role)
   )
     return { error: "invalidInput" };
-  return createSession(locale, "/auth/login", { username, password });
-}
 
-export async function enterViewer(
-  _state: LoginState,
-  form: FormData,
-): Promise<LoginState> {
-  const locale = String(form.get("locale") ?? "");
-  if (!isLocale(locale)) return { error: "invalidInput" };
-  if (process.env.SIFAP_GUEST_VIEWER_ENABLED !== "true")
-    return { error: "unavailable" };
-  return createSession(locale, "/auth/viewer");
-}
-
-async function createSession(
-  locale: string,
-  path: string,
-  credentials?: { username: string; password: string },
-): Promise<LoginState> {
   let response: Response;
   try {
-    response = await fetch(apiUrl(path), {
+    response = await fetch(apiUrl("/auth/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: credentials ? JSON.stringify(credentials) : undefined,
+      body: JSON.stringify({ username, password, role }),
       cache: "no-store",
       redirect: "error",
       signal: AbortSignal.timeout(12000),
@@ -63,6 +48,7 @@ async function createSession(
   if (response.status === 401) return { error: "invalidCredentials" };
   if (response.status === 429) return { error: "rateLimited" };
   if (!response.ok) return { error: "unavailable" };
+
   const session: unknown = await response.json();
   if (
     typeof session !== "object" ||
@@ -75,6 +61,7 @@ async function createSession(
     session.expiresIn > 3600
   )
     throw new Error("Invalid authentication contract");
+
   (await cookies()).set(SESSION_COOKIE, session.accessToken, {
     httpOnly: true,
     secure:
@@ -86,6 +73,7 @@ async function createSession(
   });
   redirect(`/${locale}/dashboard`);
 }
+
 export async function logout(form: FormData) {
   const requested = String(form.get("locale") ?? "");
   const locale = isLocale(requested) ? requested : "pt-BR";

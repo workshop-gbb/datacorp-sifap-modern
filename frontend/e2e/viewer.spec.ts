@@ -1,10 +1,37 @@
 import { test, expect, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { dictionary, locales, type Locale } from "../src/lib/i18n";
 
-async function login(page: Page, locale: Locale) {
+function credentials(role: "ADMIN" | "VIEWER") {
+  const file = process.env.SIFAP_TEST_SECRET_FILE;
+  if (file) {
+    const data = JSON.parse(readFileSync(file, "utf8"));
+    const username = data[`SIFAP_${role}_USERNAME`];
+    const password = data[`SIFAP_${role}_PASSWORD`];
+    if (typeof password !== "string")
+      throw new Error(`Missing ${role} test credential`);
+    return { username, password };
+  }
+  const password = process.env[`SIFAP_${role}_PASSWORD`];
+  if (!password) throw new Error("Provide protected test credentials.");
+  return {
+    username: process.env[`SIFAP_${role}_USERNAME`] ?? role.toLowerCase(),
+    password,
+  };
+}
+
+async function login(
+  page: Page,
+  locale: Locale,
+  role: "ADMIN" | "VIEWER" = "VIEWER",
+) {
   const d = dictionary(locale);
-  await page.goto(`/${locale}`);
-  await page.getByRole("button", { name: d.explore, exact: true }).click();
+  const account = credentials(role);
+  await page.goto(`/${locale}/login`);
+  await page.getByLabel(d.accessType, { exact: true }).selectOption(role);
+  await page.getByLabel(d.username, { exact: true }).fill(account.username);
+  await page.getByLabel(d.password, { exact: true }).fill(account.password);
+  await page.getByRole("button", { name: d.signIn, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/${locale}/dashboard$`));
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(
     d.dashboardTitle,
@@ -25,7 +52,7 @@ for (const locale of locales) {
         d.heroFirst,
       );
       await expect(
-        page.getByRole("button", { name: d.explore, exact: true }),
+        page.getByRole("link", { name: d.explore, exact: true }),
       ).toBeVisible();
       expect(
         await page.evaluate(
@@ -39,8 +66,8 @@ for (const locale of locales) {
             .getByRole("link", { name: choice, exact: true }),
         ).toBeVisible();
     }
-    await page.getByRole("button", { name: d.explore, exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/${locale}/dashboard$`));
+    await page.getByRole("link", { name: d.explore, exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${locale}/login$`));
   });
 
   test(`${locale}: authenticated viewer explores all screens and exports`, async ({
@@ -132,12 +159,11 @@ test("invalid login and forged session do not grant access", async ({
   // REQ-103 REQ-104 REQ-111
   const d = dictionary("en");
   await page.goto("/en/login");
-  await page.getByText(d.credentialAccess, { exact: true }).click();
   await page.getByLabel(d.username, { exact: true }).fill("viewer");
   await page
     .getByLabel(d.password, { exact: true })
     .fill("not-a-valid-credential");
-  await page.locator(".credential-login").getByRole("button", { name: d.signIn, exact: true }).click();
+  await page.getByRole("button", { name: d.signIn, exact: true }).click();
   await expect(
     page.getByRole("alert").filter({ hasText: d.invalidCredentials }),
   ).toBeVisible();
@@ -158,7 +184,14 @@ test("API enforces viewer permissions and reconciles records", async ({
   // REQ-104 REQ-105 REQ-106 REQ-108 REQ-112
   const base = process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080";
   expect((await request.get(`${base}/api/v1/payments`)).status()).toBe(401);
-  const loginResponse = await request.post(`${base}/api/v1/auth/viewer`);
+  const viewer = credentials("VIEWER");
+  const loginResponse = await request.post(`${base}/api/v1/auth/login`, {
+    data: {
+      username: viewer.username,
+      password: viewer.password,
+      role: "VIEWER",
+    },
+  });
   expect(loginResponse.status()).toBe(200);
   const session = await loginResponse.json();
   const headers = { Authorization: `Bearer ${session.accessToken}` };

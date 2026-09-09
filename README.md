@@ -35,10 +35,10 @@ This is **synthetic workshop data**, not a production benefit system. Its 150
 participants, six programs and six months of records demonstrate an actual
 persisted API and UI without inventing the unresolved financial rules.
 
-Click the access button to enter directly as `viewer`, without a password.
-This is explicitly enabled public access to synthetic classroom data only.
-Sessions and permissions remain server-enforced; operator access and secret
-configuration remain protected.
+Choose Administrator or Viewer on the sign-in page and enter the credentials
+provided by the facilitator. The selected role must match the account; sessions
+and permissions remain server-enforced. Passwords stay in Key Vault and are not
+embedded in the UI, source or browser storage.
 
 See [viewer operations](docs/operations/viewer.md), the
 [viewer specification](specs/002-viewer-platform/spec.md), and

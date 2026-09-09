@@ -3,7 +3,6 @@ import { LoginForm } from "@/components/login-form";
 import { dictionary, isLocale } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 import { ArrowUpRight, LockKeyhole } from "lucide-react";
-import { ViewerButton } from "@/components/viewer-button";
 export default async function Login({
   params,
 }: {
@@ -37,25 +36,8 @@ export default async function Login({
         <div className="login-panel">
           <p className="eyebrow">{d.viewer} / 01</p>
           <h1>{d.loginTitle}</h1>
-          <p>
-            {process.env.SIFAP_GUEST_VIEWER_ENABLED === "true"
-              ? d.directViewerCopy
-              : d.loginCopy}
-          </p>
-          {process.env.SIFAP_GUEST_VIEWER_ENABLED === "true" ? (
-            <>
-              <div className="guest-login-panel">
-                <ViewerButton locale={locale} label={d.enterViewer} />
-                <p>{d.directViewerNote}</p>
-              </div>
-              <details className="credential-login">
-                <summary>{d.credentialAccess}</summary>
-                <LoginForm locale={locale} />
-              </details>
-            </>
-          ) : (
-            <LoginForm locale={locale} />
-          )}
+          <p>{d.loginCopy}</p>
+          <LoginForm locale={locale} />
           <p className="muted tiny">{d.syntheticCopy}</p>
         </div>
       </main>
