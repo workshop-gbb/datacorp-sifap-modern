@@ -21,12 +21,17 @@ export interface Beneficiary {
   id: string;
   name: string;
   documentMasked: string;
+  nisMasked: string;
+  birthDate: string;
   programCode: string;
   programName: string;
   state: string;
   city: string;
+  region: string;
   status: string;
   enrolledAt: string;
+  dependents: number;
+  familyIncome: string;
 }
 export interface Payment {
   id: string;
@@ -36,9 +41,19 @@ export interface Payment {
   programName: string;
   state: string;
   period: string;
+  grossAmount: string;
+  discountAmount: string;
   amount: string;
   status: string;
+  type: string;
   paidAt: string | null;
+}
+export interface AuditEvent {
+  id: string;
+  date: string;
+  module: string;
+  action: string;
+  entity: string;
 }
 export interface Page<T> {
   items: T[];
@@ -54,11 +69,17 @@ export interface Dashboard {
     beneficiaries: number;
     activePrograms: number;
     payments: number;
-    paidAmount: string;
-    pendingAmount: string;
+    grossAmount: string;
+    discountAmount: string;
+    netAmount: string;
     coverageStates: number;
   };
-  monthlyPayments: { month: string; paid: string; pending: string }[];
+  monthlyPayments: {
+    month: string;
+    gross: string;
+    discount: string;
+    net: string;
+  }[];
   programDistribution: {
     code: string;
     name: string;
@@ -67,21 +88,15 @@ export interface Dashboard {
   }[];
   stateDistribution: { state: string; beneficiaries: number; amount: string }[];
   recentPayments: Payment[];
-  recentActivity: {
-    id: string;
-    occurredAt: string;
-    action: string;
-    resourceType: string;
-    resourceId: string;
-  }[];
+  recentActivity: AuditEvent[];
 }
 export interface Summary {
   dataset: Dataset;
   period: string;
   totalPayments: number;
-  paidAmount: string;
-  pendingAmount: string;
-  blockedAmount: string;
+  grossAmount: string;
+  discountAmount: string;
+  netAmount: string;
   byProgram: { code: string; name: string; payments: number; amount: string }[];
   byState: { state: string; payments: number; amount: string }[];
 }

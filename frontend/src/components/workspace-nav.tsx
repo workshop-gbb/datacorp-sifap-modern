@@ -8,6 +8,7 @@ import {
   Layers,
   ArrowLeftRight,
   FileChartColumn,
+  ScrollText,
   Plug,
   LockKeyhole,
   Menu,
@@ -26,6 +27,7 @@ export function WorkspaceNav({ locale }: { locale: Locale }) {
     { path: "programs", title: d.programs, icon: Layers },
     { path: "payments", title: d.payments, icon: ArrowLeftRight },
     { path: "reports", title: d.reports, icon: FileChartColumn },
+    { path: "audits", title: d.audits, icon: ScrollText },
     { path: "integrations", title: d.integrations, icon: Plug },
   ];
   return (

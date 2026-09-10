@@ -1,6 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { dictionary, locales, type Locale } from "../src/lib/i18n";
+import {
+  dictionary,
+  locales,
+  programName,
+  type Locale,
+} from "../src/lib/i18n";
 
 function credentials(role: "ADMIN" | "VIEWER") {
   const file = process.env.SIFAP_TEST_SECRET_FILE;
@@ -73,7 +78,7 @@ for (const locale of locales) {
     page,
     context,
   }) => {
-    // REQ-103 REQ-105 REQ-106 REQ-107 REQ-108 REQ-109 REQ-111
+    // REQ-103 REQ-106 REQ-107 REQ-108 REQ-109 REQ-111 REQ-127 REQ-128 REQ-129
     const d = dictionary(locale);
     await page.setViewportSize({ width: 1440, height: 1000 });
     await login(page, locale);
@@ -83,25 +88,53 @@ for (const locale of locales) {
     expect(session?.httpOnly).toBe(true);
     if (process.env.SIFAP_BASE_URL?.startsWith("https:"))
       expect(session?.secure).toBe(true);
-    await expect(page.locator(".metric")).toHaveCount(4);
+    await expect(page.locator(".metric")).toHaveCount(6);
     await expect(
       page.getByRole("img", { name: d.paymentTrend, exact: true }),
     ).toBeVisible();
+    await expect(page.locator(".workspace-footer")).toContainText("2018-03-14");
     await page.goto(`/${locale}/beneficiaries`);
-    await page.getByLabel(d.search, { exact: true }).fill("0001");
+    const search = page.getByLabel(d.search, { exact: true });
+    await search.fill("ticket 42 / CPF 123.456.789-01");
+    await page.getByRole("button", { name: d.apply, exact: true }).click();
+    await expect(search).toBeVisible();
+    expect(
+      await search.evaluate(
+        (input) => input instanceof HTMLInputElement && input.checkValidity(),
+      ),
+    ).toBe(false);
+    expect(page.url()).not.toContain("123.456");
+    await page
+      .getByLabel(d.search, { exact: true })
+      .fill("MARIA ALMEIDA ALMEIDA");
     await page.getByRole("button", { name: d.apply, exact: true }).click();
     await expect(page.locator("tbody tr")).toHaveCount(1);
     await page
-      .getByRole("link", { name: "Participante 001", exact: true })
+      .getByRole("link", { name: "MARIA ALMEIDA ALMEIDA", exact: true })
       .click();
+    await expect(page).toHaveURL(
+      new RegExp(`/${locale}/beneficiaries/BEN-000005$`),
+    );
+    await expect(
+      page.getByRole("link", {
+        name: programName(locale, "GASF"),
+        exact: true,
+      }),
+    ).toHaveAttribute("href", `/${locale}/programs/GASF`);
+    await expect(page.getByText(/CURITIBA/)).toBeVisible();
     await expect(
       page.getByRole("heading", { name: d.relatedPayments }),
     ).toBeVisible();
-    await expect(page.locator("tbody tr")).toHaveCount(6);
+    await expect(page.locator("tbody tr")).toHaveCount(4);
     await page.goto(`/${locale}/programs`);
     await expect(page.locator("tbody tr")).toHaveCount(6);
-    await page.getByRole("link", { name: "Renda Cidada", exact: true }).click();
-    await expect(page).toHaveURL(new RegExp(`/${locale}/programs/PRG-001$`), {
+    await page
+      .getByRole("link", {
+        name: programName(locale, "GASF"),
+        exact: true,
+      })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/${locale}/programs/GASF$`), {
       timeout: 15000,
     });
     await expect(
@@ -111,12 +144,17 @@ for (const locale of locales) {
     await expect(page.locator("tbody tr")).toHaveCount(12);
     await page.getByRole("link", { name: d.next, exact: true }).click();
     await expect(page).toHaveURL(/page=1/);
-    await page.goto(`/${locale}/reports?program=PRG-001`);
+    await page.goto(`/${locale}/reports?program=GASF`);
     const download = page.waitForEvent("download");
     await page.getByRole("link", { name: d.download, exact: true }).click();
     const file = await download;
     expect((await file.suggestedFilename()).endsWith(".csv")).toBe(true);
     expect(await file.failure()).toBeNull();
+    await page.goto(`/${locale}/audits`);
+    await expect(page.locator("tbody tr")).toHaveCount(12);
+    await page.getByLabel(d.search, { exact: true }).fill("CADBENEF");
+    await page.getByRole("button", { name: d.apply, exact: true }).click();
+    await expect(page.locator("tbody tr").first()).toBeVisible();
     await page.goto(`/${locale}/integrations`);
     await expect(page.locator(".integration-card")).toHaveCount(2);
     await expect(page.getByText(d.legacyScope, { exact: true })).toBeVisible();
@@ -199,7 +237,7 @@ test("administrator credentials grant only the configured administrator identity
 test("API enforces viewer permissions and reconciles records", async ({
   request,
 }) => {
-  // REQ-104 REQ-105 REQ-106 REQ-108 REQ-112
+  // REQ-104 REQ-106 REQ-108 REQ-112 REQ-126 REQ-127 REQ-128 REQ-129 REQ-131
   const base = process.env.SIFAP_API_BASE ?? "http://127.0.0.1:18080";
   expect((await request.get(`${base}/api/v1/payments`)).status()).toBe(401);
   const viewer = credentials("VIEWER");
@@ -224,7 +262,28 @@ test("API enforces viewer permissions and reconciles records", async ({
     await request.get(`${base}/api/v1/dashboard`, { headers })
   ).json();
   expect(summary.totalPayments === dashboard.totals.payments).toBe(true);
-  expect(summary.paidAmount === dashboard.totals.paidAmount).toBe(true);
+  expect(summary.grossAmount === dashboard.totals.grossAmount).toBe(true);
+  expect(summary.discountAmount === dashboard.totals.discountAmount).toBe(true);
+  expect(summary.netAmount === dashboard.totals.netAmount).toBe(true);
+  expect(dashboard.totals.beneficiaries).toBe(500);
+  expect(dashboard.availablePeriods).toEqual([
+    "2017-10",
+    "2017-11",
+    "2017-12",
+    "2018-01",
+  ]);
+  const maria = await (
+    await request.get(`${base}/api/v1/beneficiaries/BEN-000005`, { headers })
+  ).json();
+  expect(maria.beneficiary.name).toBe("MARIA ALMEIDA ALMEIDA");
+  expect(maria.beneficiary.programCode).toBe("GASF");
+  expect(maria.payments).toHaveLength(4);
+  expect("cpf" in maria.beneficiary).toBe(false);
+  expect("nis" in maria.beneficiary).toBe(false);
+  const audits = await (
+    await request.get(`${base}/api/v1/audit-events?size=100`, { headers })
+  ).json();
+  expect(audits.total).toBe(200);
   const csv = await request.get(`${base}/api/v1/reports/payments.csv`, {
     headers,
   });

@@ -6,9 +6,25 @@ import {
   FileSearch,
   ArrowUpRight,
 } from "lucide-react";
-import { date, dictionary, label, money, month, type Locale } from "@/lib/i18n";
+import {
+  auditLabel,
+  date,
+  dictionary,
+  label,
+  legacyCodeLabel,
+  money,
+  month,
+  programName,
+  type Locale,
+} from "@/lib/i18n";
 import { periods, pageLink, type Search as SearchParams } from "@/lib/query";
-import type { Beneficiary, Page, Payment, Program } from "@/lib/types";
+import type {
+  AuditEvent,
+  Beneficiary,
+  Page,
+  Payment,
+  Program,
+} from "@/lib/types";
 import { Button } from "./ui/button";
 
 export function PageHeading({
@@ -33,11 +49,30 @@ export function PageHeading({
     </div>
   );
 }
-export function Status({ status, locale }: { status: string; locale: Locale }) {
+export function Status({
+  status,
+  locale,
+  kind = "beneficiary",
+}: {
+  status: string;
+  locale: Locale;
+  kind?: "program" | "beneficiary" | "payment" | "integration";
+}) {
+  const text =
+    kind === "integration"
+      ? label(locale, status)
+      : legacyCodeLabel(
+          locale,
+          kind === "program" ? "program-status" : kind,
+          status,
+        );
   return (
-    <span className={`status status-${status.toLowerCase()}`}>
+    <span
+      className={`status status-${kind}-${status.toLowerCase()}`}
+      title={status}
+    >
       <span />
-      {label(locale, status)}
+      {text}
     </span>
   );
 }
@@ -104,11 +139,12 @@ export function Filters({
   const report = section === "reports";
   const payment = section === "payments";
   const programs = section === "programs";
+  const audits = section === "audits";
   const statuses = payment
-    ? ["PAID", "PENDING", "BLOCKED"]
+    ? ["C", "D", "E", "G", "P", "R"]
     : programs
-      ? ["ACTIVE", "SUSPENDED"]
-      : ["ACTIVE", "PENDING", "SUSPENDED"];
+      ? ["A"]
+      : ["A", "S", "C", "I", "D"];
   return (
     <form className="filter-bar">
       {!report && (
@@ -120,6 +156,8 @@ export function Filters({
               id="q"
               name="q"
               maxLength={80}
+              pattern={String.raw`(?!.*(?:^|\D)(?:\d[.\-\s]*){11}(?:$|\D)).*`}
+              title={d.identifierSearchBlocked}
               placeholder={d.searchPlaceholder}
               defaultValue={value("q")}
             />
@@ -132,7 +170,7 @@ export function Filters({
           <select
             id="filter-period"
             name="period"
-            defaultValue={value("period", "2026-08")}
+            defaultValue={value("period", "2018-01")}
           >
             {periods.map((p) => (
               <option key={p} value={p}>
@@ -142,47 +180,62 @@ export function Filters({
           </select>
         </div>
       )}
-      {!programs && (
+      {!programs && !audits && (
         <>
           <div>
             <label htmlFor="program">{d.program}</label>
             <select id="program" name="program" defaultValue={value("program")}>
               <option value="">{d.all}</option>
-              {[
-                "Renda Cidada",
-                "Aprender Mais",
-                "Casa Acolhedora",
-                "Saude Presente",
-                "Mesa para Todos",
-                "Novos Caminhos",
-              ].map((p, i) => (
-                <option key={p} value={`PRG-00${i + 1}`}>
-                  {p}
-                </option>
-              ))}
+              {["PBF1", "BPC1", "PETI", "AUX1", "GASF", "IDOS"].map(
+                (code) => (
+                  <option key={code} value={code}>
+                    {programName(locale, code)}
+                  </option>
+                ),
+              )}
             </select>
           </div>
           <div>
             <label htmlFor="state">{d.state}</label>
             <select id="state" name="state" defaultValue={value("state")}>
               <option value="">{d.all}</option>
-              {["BA", "CE", "DF", "MG", "PA", "PE", "PR", "RJ", "RS", "SP"].map(
-                (s) => (
-                  <option key={s}>{s}</option>
-                ),
-              )}
+              {[
+                "AC",
+                "AM",
+                "BA",
+                "CE",
+                "DF",
+                "GO",
+                "MG",
+                "PE",
+                "PR",
+                "RJ",
+                "RS",
+                "SC",
+                "SP",
+              ].map((s) => (
+                <option key={s}>{s}</option>
+              ))}
             </select>
           </div>
         </>
       )}
-      {!report && (
+      {!report && !audits && (
         <div>
           <label htmlFor="status">{d.status}</label>
           <select id="status" name="status" defaultValue={value("status")}>
             <option value="">{d.all}</option>
             {statuses.map((s) => (
               <option value={s} key={s}>
-                {label(locale, s)}
+                {legacyCodeLabel(
+                  locale,
+                  payment
+                    ? "payment"
+                    : programs
+                      ? "program-status"
+                      : "beneficiary",
+                  s,
+                )}
               </option>
             ))}
           </select>
@@ -276,8 +329,11 @@ export function PaymentTable({
             <th>{d.participant}</th>
             <th>{d.program}</th>
             <th>{d.period}</th>
-            <th className="numeric">{d.amount}</th>
+            <th className="numeric">{d.grossAmount}</th>
+            <th className="numeric">{d.discountAmount}</th>
+            <th className="numeric">{d.netAmount}</th>
             <th>{d.status}</th>
+            <th>{d.paymentType}</th>
             <th>
               <span className="sr-only">{d.detail}</span>
             </th>
@@ -295,11 +351,18 @@ export function PaymentTable({
                 </Link>
                 <small className="cell-subtext">{p.state}</small>
               </td>
-              <td>{p.programName}</td>
+              <td>{programName(locale, p.programCode, p.programName)}</td>
               <td>{month(p.period, locale)}</td>
+              <td className="numeric mono">{money(p.grossAmount, locale)}</td>
+              <td className="numeric mono">
+                {money(p.discountAmount, locale)}
+              </td>
               <td className="numeric mono">{money(p.amount, locale)}</td>
               <td>
-                <Status status={p.status} locale={locale} />
+                <Status status={p.status} locale={locale} kind="payment" />
+              </td>
+              <td className="mono">
+                {legacyCodeLabel(locale, "payment-type", p.type)}
               </td>
               <td>
                 <Link
@@ -354,7 +417,7 @@ export function BeneficiaryTable({
               <td className="mono">{p.documentMasked}</td>
               <td>
                 <Link href={`/${locale}/programs/${p.programCode}`}>
-                  {p.programName}
+                  {programName(locale, p.programCode, p.programName)}
                 </Link>
               </td>
               <td>
@@ -362,7 +425,7 @@ export function BeneficiaryTable({
                 <small className="cell-subtext">{p.state}</small>
               </td>
               <td>
-                <Status status={p.status} locale={locale} />
+                <Status status={p.status} locale={locale} kind="beneficiary" />
               </td>
               <td>{date(p.enrolledAt, locale)}</td>
             </tr>
@@ -402,14 +465,68 @@ export function ProgramTable({
           {items.map((p) => (
             <tr key={p.code}>
               <td>
-                <Link href={`/${locale}/programs/${p.code}`}>{p.name}</Link>
+                <Link href={`/${locale}/programs/${p.code}`}>
+                  {programName(locale, p.code, p.name)}
+                </Link>
                 <small className="cell-subtext mono">{p.code}</small>
               </td>
-              <td>{label(locale, p.type)}</td>
+              <td>{legacyCodeLabel(locale, "program-type", p.type)}</td>
               <td className="mono">{p.beneficiaryCount}</td>
               <td className="numeric mono">{money(p.monthlyAmount, locale)}</td>
               <td>
-                <Status status={p.status} locale={locale} />
+                <Status status={p.status} locale={locale} kind="program" />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function AuditTable({
+  items,
+  locale,
+}: {
+  items: AuditEvent[];
+  locale: Locale;
+}) {
+  const d = dictionary(locale);
+  if (!items.length) return <Empty locale={locale} />;
+  return (
+    <div
+      className="table-scroll"
+      tabIndex={0}
+      role="region"
+      aria-label={d.audits}
+    >
+      <table>
+        <thead>
+          <tr>
+            <th>{d.reference}</th>
+            <th>{d.auditDate}</th>
+            <th>{d.auditModule}</th>
+            <th>{d.auditAction}</th>
+            <th>{d.auditEntity}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((event) => (
+            <tr key={event.id}>
+              <td className="mono">{event.id}</td>
+              <td>{date(event.date, locale)}</td>
+              <td className="mono">{event.module}</td>
+              <td>
+                <span className="mono">{event.action}</span>
+                <small className="cell-subtext">
+                  {auditLabel(locale, "action", event.action)}
+                </small>
+              </td>
+              <td>
+                <span className="mono">{event.entity}</span>
+                <small className="cell-subtext">
+                  {auditLabel(locale, "entity", event.entity)}
+                </small>
               </td>
             </tr>
           ))}

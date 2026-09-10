@@ -21,11 +21,33 @@ They are not embedded in the public landing, URL, browser storage or client code
 
 ## What the workshop does and does not demonstrate
 
-The modern database holds 150 explicitly synthetic participants, six programs,
-and 900 payment records spanning March through August 2026. Indicators, lists
-and exports query that persisted dataset. A CSV export includes the entire
-filtered result, not just the current page. Print / Save as PDF uses the browser's
-print engine and the report print stylesheet.
+The active modern database snapshot is generated from the approved legacy
+fixture and contains all 6 programs, 500 beneficiaries, 2,000 payments and 200
+audit events across October 2017 through January 2018. Indicators, lists,
+details, audit views and exports query that persisted snapshot. A CSV export
+includes the entire filtered result, not just the current page. Print / Save as
+PDF uses the browser's print engine and the report print stylesheet.
+
+The previous placeholder tables remain physically present only for immediate
+application rollback. Active reads resolve through atomically switched,
+append-only snapshot views.
+
+### Canonical legacy-to-modern comparison
+
+Use `MARIA ALMEIDA ALMEIDA` for the paired demonstration:
+
+1. In the legacy viewer, search by the facilitator-provided synthetic
+   identifier and show the Natural beneficiary and payment-history screen.
+2. In the modern viewer, open **Beneficiaries**, search for
+   `MARIA ALMEIDA ALMEIDA`, and open `BEN-000005`.
+3. Compare program `GASF`, Curitiba/PR, registration context and the four
+   payments from October 2017 through January 2018.
+4. Point out the intentional privacy improvement: the modern API and interface
+   retain only approved CPF/NIS masks and never accept full identifiers as
+   search terms.
+
+Payment status and type values remain source codes. The interface does not
+silently reinterpret disputed legacy meanings as paid, pending or blocked.
 
 The legacy integration calls only its public HTTPS health endpoint. It does not
 read Adabas records or certify all Natural programs. IBGE supplies actual public
@@ -42,6 +64,8 @@ eligibility, reconcile production financial systems, or execute payments.
 - Host: `sifap-modern-vm`, Ubuntu 24.04, `Standard_D2s_v7`.
 - Key Vault: `sifapmodfiepi9`, private endpoint and linked private DNS.
 - Runtime secret: `workshop-runtime`, JSON containing the generated credentials.
+- Active dataset: `legacy-2018-03-14`, generated from the pinned legacy seed and
+  validated by commit, generator and normalized-content hashes.
 - The VM managed identity has only `Key Vault Secrets User` on that vault.
 - `sifap-modern.service` fetches protected runtime configuration after a reboot.
 - PostgreSQL and TLS data are persisted in Docker volumes.
@@ -120,6 +144,7 @@ the same `pnpm test:e2e` suite. It exercises:
 
 - All three landing locales at 1440 and 390 pixels, including language attributes.
 - Actual sign-in, HttpOnly/Secure cookies, search, details, pagination and CSV.
+- The canonical Maria record, its four-payment history and all 200 audit events.
 - Every main screen, mobile navigation, logout and anonymous access denial.
 - Bad passwords, forged sessions, denied business mutations and report totals.
 - Integration status, scope and timestamps.

@@ -1304,14 +1304,22 @@ td.mono,
   border-radius: 50%;
   background: currentColor;
 }
-.status-pending {
+.status-payment-g,
+.status-payment-p,
+.status-payment-c,
+.status-payment-e,
+.status-payment-r {
   color: #85631d;
   background: #faf7e9;
   border-color: #e6dcc0;
 }
-.status-blocked,
+.status-beneficiary-s,
+.status-beneficiary-c,
+.status-beneficiary-i,
+.status-beneficiary-d,
+.status-payment-d,
 .status-unavailable,
-.status-suspended {
+.status-program-s {
   color: #9d4940;
   background: #fcf1ef;
   border-color: #efd6d2;

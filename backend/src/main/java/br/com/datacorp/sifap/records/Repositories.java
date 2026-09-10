@@ -9,3 +9,6 @@ interface PaymentRepository extends JpaRepository<Payment, String> {
     List<Payment> findByPeriodOrderByIdAsc(String period);
     List<Payment> findByBeneficiaryIdOrderByPeriodDesc(String beneficiaryId);
 }
+interface AuditEventRepository extends JpaRepository<AuditEvent, String> {
+    List<AuditEvent> findTop6ByOrderByEventDateDescIdDesc();
+}

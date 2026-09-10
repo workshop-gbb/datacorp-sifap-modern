@@ -1,4 +1,10 @@
-import { dictionary, money, month, type Locale } from "@/lib/i18n";
+import {
+  dictionary,
+  money,
+  month,
+  programName,
+  type Locale,
+} from "@/lib/i18n";
 import type { Dashboard } from "@/lib/types";
 const colors = [
   "#00689e",
@@ -16,13 +22,13 @@ export function PaymentChart({
   locale: Locale;
 }) {
   const d = dictionary(locale);
-  const maximum = Math.max(
-    1,
-    ...data.map((p) => Number(p.paid) + Number(p.pending)),
-  );
-  const x = (i: number) => 60 + i * 105;
+  const maximum = Math.max(1, ...data.flatMap((p) => [Number(p.gross), Number(p.net)]));
+  const x = (i: number) => 84 + i * 150;
   const y = (amount: string) => 200 - (Number(amount) / maximum) * 154;
-  const points = data.map((p, i) => `${x(i)},${y(p.paid)}`).join(" ");
+  const grossPoints = data
+    .map((p, i) => `${x(i)},${y(p.gross)}`)
+    .join(" ");
+  const netPoints = data.map((p, i) => `${x(i)},${y(p.net)}`).join(" ");
   return (
     <div className="chart-panel">
       <div className="panel-heading">
@@ -61,11 +67,19 @@ export function PaymentChart({
           </g>
         ))}
         <polygon
-          points={`60,200 ${points} ${x(data.length - 1)},200`}
+          points={`${x(0)},200 ${netPoints} ${x(data.length - 1)},200`}
           fill="url(#chart-fill)"
         />
         <polyline
-          points={points}
+          points={grossPoints}
+          fill="none"
+          stroke="#735a00"
+          strokeWidth="2"
+          strokeDasharray="6 5"
+          strokeLinejoin="round"
+        />
+        <polyline
+          points={netPoints}
           fill="none"
           stroke="#00689e"
           strokeWidth="2.5"
@@ -75,7 +89,7 @@ export function PaymentChart({
           <g key={p.month}>
             <circle
               cx={x(i)}
-              cy={y(p.paid)}
+              cy={y(p.net)}
               r="4"
               fill="#fff"
               stroke="#00689e"
@@ -90,7 +104,11 @@ export function PaymentChart({
       <div className="chart-legend">
         <span>
           <i style={{ background: colors[0] }} />
-          {d.paid}
+          {d.netAmount}
+        </span>
+        <span>
+          <i style={{ background: colors[2] }} />
+          {d.grossAmount}
         </span>
         <span className="muted">{d.synthetic}</span>
       </div>
@@ -100,16 +118,18 @@ export function PaymentChart({
           <thead>
             <tr>
               <th>{d.period}</th>
-              <th>{d.paid}</th>
-              <th>{d.pending}</th>
+              <th>{d.grossAmount}</th>
+              <th>{d.discountAmount}</th>
+              <th>{d.netAmount}</th>
             </tr>
           </thead>
           <tbody>
             {data.map((p) => (
               <tr key={p.month}>
                 <td>{month(p.month, locale)}</td>
-                <td>{money(p.paid, locale)}</td>
-                <td>{money(p.pending, locale)}</td>
+                <td>{money(p.gross, locale)}</td>
+                <td>{money(p.discount, locale)}</td>
+                <td>{money(p.net, locale)}</td>
               </tr>
             ))}
           </tbody>
@@ -177,7 +197,7 @@ export function ProgramChart({
           <li key={p.code}>
             <span>
               <i style={{ background: colors[i % colors.length] }} />
-              {p.name}
+              {programName(locale, p.code, p.name)}
             </span>
             <strong className="mono">{p.beneficiaries}</strong>
           </li>
