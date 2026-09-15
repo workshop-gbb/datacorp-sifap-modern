@@ -2,146 +2,292 @@ package br.com.datacorp.sifap.records;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import static br.com.datacorp.sifap.records.Views.*;
 
 @Service
-@Transactional(readOnly = true)
+@Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
 class RecordsService {
+    private static final Dataset DATASET = new Dataset(
+        "legacy-2018-03-14",
+        true,
+        LocalDate.of(2018, 3, 14),
+        "workshop-gbb/datacorp-sifap-legacy@b87992324dda18bdfc86e6507c3f99b86b99e35d");
+
     private final ProgramRepository programs;
     private final BeneficiaryRepository beneficiaries;
     private final PaymentRepository payments;
-    private static final Dataset DATASET = new Dataset("workshop-v1", true,
-        LocalDate.of(2026, 8, 31), "workshop-fixtures-v1");
+    private final AuditEventRepository auditEvents;
 
-    RecordsService(ProgramRepository programs, BeneficiaryRepository beneficiaries, PaymentRepository payments) {
+    RecordsService(ProgramRepository programs, BeneficiaryRepository beneficiaries,
+            PaymentRepository payments, AuditEventRepository auditEvents) {
         this.programs = programs;
         this.beneficiaries = beneficiaries;
         this.payments = payments;
+        this.auditEvents = auditEvents;
     }
 
     Page<ProgramView> programs(Query query) {
         var people = beneficiaries.findAll();
         var month = payments.findByPeriodOrderByIdAsc(query.period());
-        var ids = index(people, p -> p.id);
-        return page(programs.findAll().stream().sorted(Comparator.comparing(p -> p.code))
-            .filter(p -> matches(p.status, query.status()) && contains(p.code + " " + p.name, query.q()))
-            .map(p -> programView(p, people, month, ids)).toList(), query);
+        var peopleById = index(people, beneficiary -> beneficiary.id);
+        var rows = programs.findAll().stream()
+            .sorted(Comparator.comparing(program -> program.code))
+            .filter(program -> matches(program.status, query.status())
+                && contains(program.code + " " + program.name, query.q()))
+            .map(program -> programView(program, people, month, peopleById))
+            .toList();
+        return page(rows, query);
     }
 
     ProgramDetail program(String code) {
-        Program program = programs.findById(code).orElseThrow(RecordsService::notFound);
+        var program = programs.findById(code).orElseThrow(RecordsService::notFound);
         var people = beneficiaries.findAll();
-        var month = payments.findByPeriodOrderByIdAsc("2026-08");
-        var members = people.stream().filter(b -> b.programCode.equals(code))
-            .sorted(Comparator.comparing(b -> b.id)).map(b -> beneficiaryView(b, program.name)).toList();
-        return new ProgramDetail(programView(program, people, month, index(people, b -> b.id)), members);
+        var members = people.stream()
+            .filter(beneficiary -> beneficiary.programCode.equals(code))
+            .sorted(Comparator.comparing(beneficiary -> beneficiary.id))
+            .map(beneficiary -> beneficiaryView(beneficiary, program.name))
+            .toList();
+        return new ProgramDetail(
+            programView(
+                program,
+                people,
+                payments.findByPeriodOrderByIdAsc("2018-01"),
+                index(people, beneficiary -> beneficiary.id)),
+            members);
     }
 
     Page<BeneficiaryView> beneficiaries(Query query) {
-        var names = index(programs.findAll(), p -> p.code);
-        var rows = beneficiaries.findAll().stream().sorted(Comparator.comparing(b -> b.id))
-            .filter(b -> matches(b.programCode, query.program()) && matches(b.state, query.state())
-                && matches(b.status, query.status()) && contains(b.name + " " + b.id + " " + b.city, query.q()))
-            .map(b -> beneficiaryView(b, names.get(b.programCode).name)).toList();
+        var catalog = index(programs.findAll(), program -> program.code);
+        var rows = beneficiaries.findAll().stream()
+            .sorted(Comparator.comparing(beneficiary -> beneficiary.id))
+            .filter(beneficiary -> matches(beneficiary.programCode, query.program())
+                && matches(beneficiary.state, query.state())
+                && matches(beneficiary.status, query.status())
+                && contains(beneficiary.name + " " + beneficiary.id + " " + beneficiary.city, query.q()))
+            .map(beneficiary -> beneficiaryView(beneficiary, catalog.get(beneficiary.programCode).name))
+            .toList();
         return page(rows, query);
     }
 
     BeneficiaryDetail beneficiary(String id) {
-        Beneficiary person = beneficiaries.findById(id).orElseThrow(RecordsService::notFound);
-        Program program = programs.findById(person.programCode).orElseThrow(RecordsService::notFound);
-        return new BeneficiaryDetail(beneficiaryView(person, program.name),
-            payments.findByBeneficiaryIdOrderByPeriodDesc(id).stream()
-                .map(p -> paymentView(p, person, program)).toList());
+        var beneficiary = beneficiaries.findById(id).orElseThrow(RecordsService::notFound);
+        var program = programs.findById(beneficiary.programCode).orElseThrow(RecordsService::notFound);
+        var history = payments.findByBeneficiaryIdOrderByPeriodDesc(id).stream()
+            .map(payment -> paymentView(payment, beneficiary, program))
+            .toList();
+        return new BeneficiaryDetail(beneficiaryView(beneficiary, program.name), history);
     }
 
-    Page<PaymentView> payments(Query query) { return page(paymentRows(query), query); }
+    Page<PaymentView> payments(Query query) {
+        return page(paymentRows(query), query);
+    }
 
     PaymentView payment(String id) {
-        Payment payment = payments.findById(id).orElseThrow(RecordsService::notFound);
-        var person = beneficiaries.findById(payment.beneficiaryId).orElseThrow(RecordsService::notFound);
-        return paymentView(payment, person, programs.findById(person.programCode).orElseThrow(RecordsService::notFound));
+        var payment = payments.findById(id).orElseThrow(RecordsService::notFound);
+        var beneficiary = beneficiaries.findById(payment.beneficiaryId).orElseThrow(RecordsService::notFound);
+        var program = programs.findById(beneficiary.programCode).orElseThrow(RecordsService::notFound);
+        return paymentView(payment, beneficiary, program);
     }
 
     List<PaymentView> paymentRows(Query query) {
-        var people = index(beneficiaries.findAll(), p -> p.id);
-        var catalog = index(programs.findAll(), p -> p.code);
+        var people = index(beneficiaries.findAll(), beneficiary -> beneficiary.id);
+        var catalog = index(programs.findAll(), program -> program.code);
         return payments.findByPeriodOrderByIdAsc(query.period()).stream()
-            .map(p -> paymentView(p, people.get(p.beneficiaryId), catalog.get(people.get(p.beneficiaryId).programCode)))
-            .filter(p -> matches(p.programCode(), query.program()) && matches(p.state(), query.state())
-                && matches(p.status(), query.status())
-                && contains(p.id() + " " + p.beneficiaryName() + " " + p.programName(), query.q())).toList();
+            .map(payment -> {
+                var beneficiary = people.get(payment.beneficiaryId);
+                return paymentView(payment, beneficiary, catalog.get(beneficiary.programCode));
+            })
+            .filter(payment -> matches(payment.programCode(), query.program())
+                && matches(payment.state(), query.state())
+                && matches(payment.status(), query.status())
+                && contains(payment.id() + " " + payment.beneficiaryName() + " " + payment.programName(), query.q()))
+            .toList();
     }
 
+    Page<AuditEventView> auditEvents(Query query) {
+        var rows = auditEvents.findAll().stream()
+            .sorted(Comparator.comparing((AuditEvent event) -> event.eventDate)
+                .thenComparing(event -> event.id).reversed())
+            .filter(event -> contains(
+                event.id + " " + event.module + " " + event.action + " " + event.entity, query.q()))
+            .map(RecordsService::auditEventView)
+            .toList();
+        return page(rows, query);
+    }
+
+    // REQ-127 REQ-131: dashboard values come only from active legacy views.
     Dashboard dashboard(String period) {
-        Query query = Query.from(Map.of("period", period), Set.of("period"), Set.of());
+        var query = Query.from(Map.of("period", period), Set.of("period"), Set.of());
         var rows = paymentRows(query);
         var people = beneficiaries.findAll();
-        var catalog = programs.findAll().stream().sorted(Comparator.comparing(p -> p.code)).toList();
+        var catalog = programs.findAll().stream()
+            .sorted(Comparator.comparing(program -> program.code))
+            .toList();
         var history = payments.findAll();
-        var totals = new Totals(people.size(), catalog.stream().filter(p -> p.status.equals("ACTIVE")).count(),
-            rows.size(), sum(rows, "PAID"), sum(rows, "PENDING"), people.stream().map(p -> p.state).distinct().count());
-        var monthly = Query.PERIODS.stream().map(month -> new Monthly(month,
-            history.stream().filter(p -> p.period.equals(month) && p.status.equals("PAID"))
-                .map(p -> p.amount).reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString(),
-            history.stream().filter(p -> p.period.equals(month) && p.status.equals("PENDING"))
-                .map(p -> p.amount).reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString())).toList();
-        return new Dashboard(DATASET, period, Query.PERIODS, totals, monthly,
-            catalog.stream().map(p -> new ProgramDistribution(p.code, p.name,
-                people.stream().filter(b -> b.programCode.equals(p.code)).count(),
-                sum(rows.stream().filter(r -> r.programCode().equals(p.code)).toList(), ""))).toList(),
-            people.stream().map(b -> b.state).distinct().sorted().map(state -> new StateDistribution(state,
-                people.stream().filter(b -> b.state.equals(state)).count(),
-                sum(rows.stream().filter(r -> r.state().equals(state)).toList(), ""))).toList(),
+        var totals = new Totals(
+            people.size(),
+            catalog.stream().filter(program -> program.status.equals("A")).count(),
+            rows.size(),
+            sum(rows, PaymentView::grossAmount),
+            sum(rows, PaymentView::discountAmount),
+            sum(rows, PaymentView::amount),
+            people.stream().map(beneficiary -> beneficiary.state).distinct().count());
+        var monthly = Query.PERIODS.stream()
+            .map(month -> {
+                var monthPayments = history.stream().filter(payment -> payment.period.equals(month)).toList();
+                return new Monthly(
+                    month,
+                    sumPayments(monthPayments, payment -> payment.grossAmount),
+                    sumPayments(monthPayments, payment -> payment.discountAmount),
+                    sumPayments(monthPayments, payment -> payment.amount));
+            })
+            .toList();
+        return new Dashboard(
+            DATASET,
+            period,
+            Query.PERIODS,
+            totals,
+            monthly,
+            catalog.stream().map(program -> {
+                var programRows = rows.stream()
+                    .filter(payment -> payment.programCode().equals(program.code)).toList();
+                return new ProgramDistribution(
+                    program.code,
+                    program.name,
+                    people.stream().filter(beneficiary -> beneficiary.programCode.equals(program.code)).count(),
+                    sum(programRows, PaymentView::amount));
+            }).toList(),
+            people.stream().map(beneficiary -> beneficiary.state).distinct().sorted().map(state -> {
+                var stateRows = rows.stream().filter(payment -> payment.state().equals(state)).toList();
+                return new StateDistribution(
+                    state,
+                    people.stream().filter(beneficiary -> beneficiary.state.equals(state)).count(),
+                    sum(stateRows, PaymentView::amount));
+            }).toList(),
             rows.stream().sorted(Comparator.comparing(PaymentView::id).reversed()).limit(6).toList(),
-            List.of(new Activity("EVT-001", "2026-08-31T12:00:00Z", "DATASET_LOADED", "DATASET", DATASET.id())));
+            auditEvents.findTop6ByOrderByEventDateDescIdDesc().stream()
+                .map(RecordsService::auditEventView).toList());
     }
 
     Summary summary(Query query) {
         var rows = paymentRows(query);
-        return new Summary(DATASET, query.period(), rows.size(), sum(rows, "PAID"), sum(rows, "PENDING"), sum(rows, "BLOCKED"),
+        return new Summary(
+            DATASET,
+            query.period(),
+            rows.size(),
+            sum(rows, PaymentView::grossAmount),
+            sum(rows, PaymentView::discountAmount),
+            sum(rows, PaymentView::amount),
             rows.stream().map(PaymentView::programCode).distinct().sorted().map(code -> {
-                var group = rows.stream().filter(p -> p.programCode().equals(code)).toList();
-                return new ProgramReport(code, group.getFirst().programName(), group.size(), sum(group, ""));
+                var group = rows.stream().filter(payment -> payment.programCode().equals(code)).toList();
+                return new ProgramReport(
+                    code,
+                    group.getFirst().programName(),
+                    group.size(),
+                    sum(group, PaymentView::amount));
             }).toList(),
             rows.stream().map(PaymentView::state).distinct().sorted().map(state -> {
-                var group = rows.stream().filter(p -> p.state().equals(state)).toList();
-                return new StateReport(state, group.size(), sum(group, ""));
+                var group = rows.stream().filter(payment -> payment.state().equals(state)).toList();
+                return new StateReport(
+                    state,
+                    group.size(),
+                    sum(group, PaymentView::amount));
             }).toList());
     }
 
-    private static String sum(List<PaymentView> rows, String status) {
-        return rows.stream().filter(p -> matches(p.status(), status))
-            .map(p -> new BigDecimal(p.amount())).reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString();
+    private static String sum(List<PaymentView> rows, Function<PaymentView, String> amount) {
+        return rows.stream().map(amount).map(BigDecimal::new)
+            .reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString();
     }
+
+    private static String sumPayments(List<Payment> rows, Function<Payment, BigDecimal> amount) {
+        return rows.stream().map(amount).reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString();
+    }
+
     private static ProgramView programView(Program program, List<Beneficiary> people,
-            List<Payment> month, Map<String, Beneficiary> ids) {
-        return new ProgramView(program.code, program.name, program.type, program.status,
-            people.stream().filter(b -> b.programCode.equals(program.code)).count(),
-            month.stream().filter(p -> ids.get(p.beneficiaryId).programCode.equals(program.code))
-                .map(p -> p.amount).reduce(BigDecimal.ZERO, BigDecimal::add).toPlainString());
+            List<Payment> month, Map<String, Beneficiary> peopleById) {
+        return new ProgramView(
+            program.code,
+            program.name,
+            program.type,
+            program.status,
+            people.stream().filter(beneficiary -> beneficiary.programCode.equals(program.code)).count(),
+            month.stream()
+                .filter(payment -> peopleById.get(payment.beneficiaryId).programCode.equals(program.code))
+                .map(payment -> payment.amount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .toPlainString());
     }
-    private static BeneficiaryView beneficiaryView(Beneficiary b, String program) {
-        return new BeneficiaryView(b.id, b.name, b.documentMasked, b.programCode, program, b.state, b.city, b.status, b.enrolledAt);
+
+    private static BeneficiaryView beneficiaryView(Beneficiary beneficiary, String programName) {
+        return new BeneficiaryView(
+            beneficiary.id,
+            beneficiary.name,
+            beneficiary.documentMasked,
+            beneficiary.programCode,
+            programName,
+            beneficiary.nisMasked,
+            beneficiary.birthDate,
+            beneficiary.state,
+            beneficiary.city,
+            beneficiary.region,
+            beneficiary.status,
+            beneficiary.enrolledAt,
+            beneficiary.dependents,
+            beneficiary.familyIncome.toPlainString());
     }
-    private static PaymentView paymentView(Payment p, Beneficiary b, Program program) {
-        return new PaymentView(p.id, b.id, b.name, program.code, program.name, b.state, p.period, p.amount.toPlainString(), p.status, p.paidAt);
+
+    private static PaymentView paymentView(Payment payment, Beneficiary beneficiary, Program program) {
+        return new PaymentView(
+            payment.id,
+            beneficiary.id,
+            beneficiary.name,
+            program.code,
+            program.name,
+            beneficiary.state,
+            payment.period,
+            payment.grossAmount.toPlainString(),
+            payment.discountAmount.toPlainString(),
+            payment.amount.toPlainString(),
+            payment.status,
+            payment.type,
+            payment.paidAt);
     }
-    private static boolean matches(String value, String filter) { return filter.isEmpty() || value.equals(filter); }
-    private static boolean contains(String value, String q) { return value.toLowerCase(Locale.ROOT).contains(q.toLowerCase(Locale.ROOT)); }
-    private static <T> Map<String,T> index(List<T> values, Function<T,String> id) {
+
+    private static AuditEventView auditEventView(AuditEvent event) {
+        return new AuditEventView(event.id, event.eventDate, event.module, event.action, event.entity);
+    }
+
+    private static boolean matches(String value, String filter) {
+        return filter.isEmpty() || value.equals(filter);
+    }
+
+    private static boolean contains(String value, String query) {
+        return value.toLowerCase(Locale.ROOT).contains(query.toLowerCase(Locale.ROOT));
+    }
+
+    private static <T> Map<String, T> index(List<T> values, Function<T, String> id) {
         return values.stream().collect(Collectors.toMap(id, Function.identity()));
     }
+
     private static <T> Page<T> page(List<T> values, Query query) {
         int start = Math.min(values.size(), query.page() * query.size());
-        return new Page<>(values.subList(start, Math.min(values.size(), start + query.size())), values.size(), query.page(), query.size());
+        int end = Math.min(values.size(), start + query.size());
+        return new Page<>(values.subList(start, end), values.size(), query.page(), query.size());
     }
+
     private static ResponseStatusException notFound() {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND");
     }

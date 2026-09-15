@@ -18,23 +18,22 @@ final class Csv {
     }
     static String payments(List<Views.PaymentView> payments, String locale) {
         String[] headers = switch (locale) {
-            case "pt-BR" -> new String[]{"Referencia","Participante","Programa","UF","Competencia","Valor BRL","Situacao","Dados sinteticos"};
-            case "es" -> new String[]{"Referencia","Participante","Programa","Estado","Periodo","Importe BRL","Estado de pago","Datos sinteticos"};
-            default -> new String[]{"Reference","Participant","Program","State","Period","Amount BRL","Payment status","Synthetic data"};
+            case "pt-BR" -> new String[]{"Referencia", "Participante", "Programa", "UF", "Competencia",
+                "Valor bruto BRL", "Desconto BRL", "Valor liquido BRL", "Codigo status", "Codigo tipo",
+                "Dados sinteticos"};
+            case "es" -> new String[]{"Referencia", "Participante", "Programa", "Estado", "Periodo",
+                "Importe bruto BRL", "Descuento BRL", "Importe neto BRL", "Codigo de estado",
+                "Codigo de tipo", "Datos sinteticos"};
+            default -> new String[]{"Reference", "Participant", "Program", "State", "Period",
+                "Gross amount BRL", "Discount amount BRL", "Net amount BRL", "Status code",
+                "Type code", "Synthetic data"};
         };
         StringBuilder result = new StringBuilder("\uFEFF").append(row(headers));
         for (var payment : payments) {
-            String status = switch (locale + ":" + payment.status()) {
-                case "pt-BR:PAID" -> "Pago";
-                case "pt-BR:PENDING" -> "Pendente";
-                case "pt-BR:BLOCKED" -> "Bloqueado";
-                case "es:PAID" -> "Pagado";
-                case "es:PENDING" -> "Pendiente";
-                case "es:BLOCKED" -> "Bloqueado";
-                default -> payment.status();
-            };
+            // REQ-130 REQ-131: retain opaque codes and all three source amounts.
             result.append(row(payment.id(), payment.beneficiaryName(), payment.programName(),
-                payment.state(), payment.period(), payment.amount(), status, "true"));
+                payment.state(), payment.period(), payment.grossAmount(), payment.discountAmount(),
+                payment.amount(), payment.status(), payment.type(), "true"));
         }
         return result.toString();
     }

@@ -31,9 +31,12 @@ The workshop platform runs in Azure resources isolated from the legacy lab:
 | Authorization | API-enforced VIEWER role; business POST, PUT, PATCH and DELETE requests are denied |
 | Deployment | Separate Azure VM, private Key Vault, managed identity, Caddy HTTPS and persistent PostgreSQL |
 
-This is **synthetic workshop data**, not a production benefit system. Its 150
-participants, six programs and six months of records demonstrate an actual
-persisted API and UI without inventing the unresolved financial rules.
+This is **synthetic workshop data**, not a production benefit system. The
+active PostgreSQL snapshot preserves the complete normalized legacy fixture:
+six programs, 500 beneficiaries, 2,000 payments, 200 audit events and four
+historical periods from October 2017 through January 2018. The API and UI expose
+the same records without inventing unresolved financial meanings or returning
+complete CPF/NIS values.
 
 Enter the credentials provided by the facilitator. The account determines the
 role: `admin` is reserved for the facilitator and `viewer` is read only. Sessions

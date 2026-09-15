@@ -34,7 +34,8 @@ protected `SIFAP_ADMIN_*` / `SIFAP_VIEWER_*` environment variables. Use
 belongs in a test source file.
 
 The tests cover all three locales, mobile/desktop layouts, actual sign-in,
-consultation, details, filtering, pagination, report download, logout and API
+consultation, details, filtering, pagination, the canonical Maria comparison,
+the complete legacy-derived audit view, report download, logout and API
 permission enforcement. Unit coverage is measured for the localization and
 query helpers; server-rendered journeys are covered by the browser suite.
 
@@ -47,4 +48,7 @@ query helpers; server-rendered journeys are covered by the browser suite.
 - Authenticated record links use document navigation to revalidate access and
   avoid speculative fetching of personal-record pages.
 - CSS print rules format reports for the browser's Print / Save as PDF operation.
-- The reference dataset is synthetic and is identified throughout the application.
+- The active synthetic dataset preserves all 6 programs, 500 beneficiaries,
+  2,000 payments and 200 audit events from the approved legacy snapshot.
+- Complete CPF and NIS values are neither returned nor accepted as modern search
+  terms; only approved masks and modern identifiers reach the interface.

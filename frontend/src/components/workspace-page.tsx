@@ -11,7 +11,15 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { api } from "@/lib/api";
-import { dictionary, date, label, money, month, isLocale } from "@/lib/i18n";
+import {
+  dictionary,
+  date,
+  label,
+  money,
+  month,
+  isLocale,
+  programName,
+} from "@/lib/i18n";
 import { queryString, type Search } from "@/lib/query";
 import type {
   Dashboard,
@@ -19,6 +27,7 @@ import type {
   Program,
   Beneficiary,
   Payment,
+  AuditEvent,
   Summary,
   Integrations,
 } from "@/lib/types";
@@ -30,6 +39,7 @@ import {
   PaymentTable,
   ProgramTable,
   BeneficiaryTable,
+  AuditTable,
   Pagination,
   Status,
 } from "@/components/data-ui";
@@ -54,6 +64,7 @@ export default async function WorkspacePage({
       "beneficiaries",
       "payments",
       "reports",
+      "audits",
       "integrations",
     ].includes(section)
   )
@@ -86,15 +97,27 @@ export default async function WorkspacePage({
             note={d.readOnly}
           />
           <Metric
-            label={d.paidMetric}
-            value={money(data.totals.paidAmount, locale)}
+            label={d.paymentsMetric}
+            value={data.totals.payments.toLocaleString(locale)}
+            icon={<Database size={18} />}
+            note={month(data.period, locale)}
+          />
+          <Metric
+            label={d.grossMetric}
+            value={money(data.totals.grossAmount, locale)}
             icon={<Wallet size={18} />}
             note={month(data.period, locale)}
           />
           <Metric
-            label={d.pendingMetric}
-            value={money(data.totals.pendingAmount, locale)}
+            label={d.discountMetric}
+            value={money(data.totals.discountAmount, locale)}
             icon={<Clock3 size={18} />}
+            note={month(data.period, locale)}
+          />
+          <Metric
+            label={d.netMetric}
+            value={money(data.totals.netAmount, locale)}
+            icon={<Wallet size={18} />}
             note={month(data.period, locale)}
           />
         </div>
@@ -120,6 +143,19 @@ export default async function WorkspacePage({
             </Link>
           </div>
           <PaymentTable items={data.recentPayments} locale={locale} />
+        </section>
+        <section className="data-panel">
+          <div className="panel-heading">
+            <div>
+              <h2>{d.audits}</h2>
+              <p>{d.auditsCopy}</p>
+            </div>
+            <Link className="text-link dark-link" href={`/${locale}/audits`}>
+              {d.viewAll}
+              <ArrowUpRight size={16} />
+            </Link>
+          </div>
+          <AuditTable items={data.recentActivity} locale={locale} />
         </section>
         <div className="dashboard-bottom">
           <StateChart data={data.stateDistribution} locale={locale} />
@@ -173,9 +209,15 @@ export default async function WorkspacePage({
             value={String(data.totalPayments)}
             note={month(data.period, locale)}
           />
-          <Metric label={d.paid} value={money(data.paidAmount, locale)} />
-          <Metric label={d.pending} value={money(data.pendingAmount, locale)} />
-          <Metric label={d.blocked} value={money(data.blockedAmount, locale)} />
+          <Metric
+            label={d.grossAmount}
+            value={money(data.grossAmount, locale)}
+          />
+          <Metric
+            label={d.discountAmount}
+            value={money(data.discountAmount, locale)}
+          />
+          <Metric label={d.netAmount} value={money(data.netAmount, locale)} />
         </div>
         <div className="report-grid">
           <section className="data-panel">
@@ -188,7 +230,7 @@ export default async function WorkspacePage({
                   <tr>
                     <th>{d.program}</th>
                     <th>{d.payments}</th>
-                    <th className="numeric">{d.amount}</th>
+                    <th className="numeric">{d.netAmount}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,7 +238,7 @@ export default async function WorkspacePage({
                     <tr key={p.code}>
                       <td>
                         <Link href={`/${locale}/programs/${p.code}`}>
-                          {p.name}
+                          {programName(locale, p.code, p.name)}
                         </Link>
                       </td>
                       <td className="mono">{p.payments}</td>
@@ -219,7 +261,7 @@ export default async function WorkspacePage({
                   <tr>
                     <th>{d.state}</th>
                     <th>{d.payments}</th>
-                    <th className="numeric">{d.amount}</th>
+                    <th className="numeric">{d.netAmount}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -240,12 +282,32 @@ export default async function WorkspacePage({
       </>
     );
   }
+  if (section === "audits") {
+    const data = await api<Page<AuditEvent>>(
+      `/audit-events?${queryString(search, ["q", "page", "size"])}`,
+      locale,
+    );
+    return (
+      <>
+        <PageHeading
+          eyebrow={`06 / ${d.audits}`}
+          title={d.audits}
+          copy={d.auditsCopy}
+        />
+        <Filters locale={locale} section={section} search={search} />
+        <section className="data-panel">
+          <AuditTable items={data.items} locale={locale} />
+          <Pagination page={data} locale={locale} search={search} />
+        </section>
+      </>
+    );
+  }
   if (section === "integrations") {
     const data = await api<Integrations>("/integrations", locale);
     return (
       <>
         <PageHeading
-          eyebrow={`06 / ${d.integrations}`}
+          eyebrow={`07 / ${d.integrations}`}
           title={d.integrationsTitle}
           copy={d.integrationsCopy}
         />
@@ -258,7 +320,11 @@ export default async function WorkspacePage({
                 >
                   {integration.id === "legacy" ? ">_" : "IBGE"}
                 </span>
-                <Status status={integration.status} locale={locale} />
+                <Status
+                  status={integration.status}
+                  locale={locale}
+                  kind="integration"
+                />
               </div>
               <h2>{integration.name}</h2>
               <p>{integration.id === "legacy" ? d.legacyScope : d.ibgeScope}</p>

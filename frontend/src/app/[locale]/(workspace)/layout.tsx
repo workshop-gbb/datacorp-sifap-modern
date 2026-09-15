@@ -58,7 +58,7 @@ export default async function WorkspaceLayout({
         </main>
         <footer className="workspace-footer">
           <span>{d.footer}</span>
-          <span className="mono">{d.snapshot}: 2026-08-31</span>
+          <span className="mono">{d.snapshot}: 2018-03-14</span>
         </footer>
       </div>
     </div>

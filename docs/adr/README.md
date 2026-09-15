@@ -8,6 +8,7 @@ Every decision that is expensive to reverse is recorded here. An ADR explains th
 | [0002](0002-viewer-workshop-platform.md) | Isolated multilingual viewer platform | accepted for the workshop; peer review before main |
 | [0003](0003-isolated-workshop-host.md) | Isolated Azure workshop host | accepted for the workshop; peer review before main |
 | [0004](0004-public-workshop-viewer.md) | Credentialed administrator and viewer sessions | accepted for the workshop; peer review before main |
+| [0005](0005-active-legacy-snapshots.md) | Append-only active legacy workshop snapshots | accepted for the workshop; peer review before main |
 
 ## Rules
 

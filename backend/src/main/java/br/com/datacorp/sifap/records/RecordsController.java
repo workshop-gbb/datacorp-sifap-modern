@@ -18,24 +18,29 @@ class RecordsController {
     }
     @GetMapping("/programs")
     Views.Page<Views.ProgramView> programs(@RequestParam Map<String,String> params) {
-        return records.programs(Query.from(params, Set.of("q","status","page","size"), Set.of("ACTIVE","SUSPENDED")));
+        return records.programs(Query.from(params, Set.of("q","status","page","size"), Set.of("A")));
     }
     @GetMapping("/programs/{id}")
     Views.ProgramDetail program(@PathVariable String id) { return records.program(id); }
     @GetMapping("/beneficiaries")
     Views.Page<Views.BeneficiaryView> beneficiaries(@RequestParam Map<String,String> params) {
         return records.beneficiaries(Query.from(params, Set.of("q","program","state","status","page","size"),
-            Set.of("ACTIVE","SUSPENDED","PENDING")));
+            Set.of("A", "S", "C", "I", "D")));
     }
     @GetMapping("/beneficiaries/{id}")
     Views.BeneficiaryDetail beneficiary(@PathVariable String id) { return records.beneficiary(id); }
     @GetMapping("/payments")
     Views.Page<Views.PaymentView> payments(@RequestParam Map<String,String> params) {
         return records.payments(Query.from(params, Set.of("q","period","program","state","status","page","size"),
-            Set.of("PAID","PENDING","BLOCKED")));
+            Set.of("C", "D", "E", "G", "P", "R")));
     }
     @GetMapping("/payments/{id}")
     Views.PaymentView payment(@PathVariable String id) { return records.payment(id); }
+    @GetMapping("/audit-events")
+    Views.Page<Views.AuditEventView> auditEvents(@RequestParam Map<String,String> params) {
+        // REQ-127: audit consultation is read-only, searchable and bounded.
+        return records.auditEvents(Query.from(params, Set.of("q", "page", "size"), Set.of()));
+    }
     @GetMapping("/reports/summary")
     Views.Summary summary(@RequestParam Map<String,String> params) {
         return records.summary(Query.from(params, Set.of("period","program","state"), Set.of()));
@@ -50,7 +55,7 @@ class RecordsController {
         var query = Query.from(queryParams, Set.of("period","program","state"), Set.of());
         byte[] content = Csv.payments(records.paymentRows(query), locale).getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok().contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sifap-synthetic-" + query.period() + ".csv\"")
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"sifap-legacy-" + query.period() + ".csv\"")
             .cacheControl(CacheControl.noStore()).body(content);
     }
 }

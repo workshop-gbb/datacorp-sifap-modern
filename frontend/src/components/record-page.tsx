@@ -2,7 +2,15 @@ import { AppLink as Link } from "@/components/app-link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
-import { dictionary, date, label, money, month, isLocale } from "@/lib/i18n";
+import {
+  dictionary,
+  date,
+  legacyCodeLabel,
+  money,
+  month,
+  isLocale,
+  programName,
+} from "@/lib/i18n";
 import type { Beneficiary, Program, Payment } from "@/lib/types";
 import {
   BeneficiaryTable,
@@ -42,7 +50,7 @@ export default async function RecordPage({
       <>
         {back}
         <PageHeading eyebrow={p.id} title={p.name} copy={d.detail}>
-          <Status status={p.status} locale={locale} />
+          <Status status={p.status} locale={locale} kind="beneficiary" />
         </PageHeading>
         <dl className="detail-grid">
           <div>
@@ -50,10 +58,18 @@ export default async function RecordPage({
             <dd className="mono">{p.documentMasked}</dd>
           </div>
           <div>
+            <dt>{d.nis}</dt>
+            <dd className="mono">{p.nisMasked}</dd>
+          </div>
+          <div>
+            <dt>{d.birthDate}</dt>
+            <dd>{date(p.birthDate, locale)}</dd>
+          </div>
+          <div>
             <dt>{d.program}</dt>
             <dd>
               <Link href={`/${locale}/programs/${p.programCode}`}>
-                {p.programName}
+                {programName(locale, p.programCode, p.programName)}
               </Link>
             </dd>
           </div>
@@ -64,8 +80,20 @@ export default async function RecordPage({
             </dd>
           </div>
           <div>
+            <dt>{d.region}</dt>
+            <dd className="mono">{p.region}</dd>
+          </div>
+          <div>
             <dt>{d.enrolled}</dt>
             <dd>{date(p.enrolledAt, locale)}</dd>
+          </div>
+          <div>
+            <dt>{d.dependents}</dt>
+            <dd>{p.dependents}</dd>
+          </div>
+          <div>
+            <dt>{d.familyIncome}</dt>
+            <dd>{money(p.familyIncome, locale)}</dd>
           </div>
         </dl>
         <section className="data-panel">
@@ -86,13 +114,17 @@ export default async function RecordPage({
     return (
       <>
         {back}
-        <PageHeading eyebrow={p.code} title={p.name} copy={d.detail}>
-          <Status status={p.status} locale={locale} />
+        <PageHeading
+          eyebrow={p.code}
+          title={programName(locale, p.code, p.name)}
+          copy={d.detail}
+        >
+          <Status status={p.status} locale={locale} kind="program" />
         </PageHeading>
         <dl className="detail-grid">
           <div>
             <dt>{d.type}</dt>
-            <dd>{label(locale, p.type)}</dd>
+            <dd>{legacyCodeLabel(locale, "program-type", p.type)}</dd>
           </div>
           <div>
             <dt>{d.beneficiaries}</dt>
@@ -104,7 +136,7 @@ export default async function RecordPage({
           </div>
           <div>
             <dt>{d.period}</dt>
-            <dd>{month("2026-08", locale)}</dd>
+            <dd>{month("2018-01", locale)}</dd>
           </div>
         </dl>
         <section className="data-panel">
@@ -121,7 +153,7 @@ export default async function RecordPage({
     <>
       {back}
       <PageHeading eyebrow={p.id} title={d.payments} copy={d.detail}>
-        <Status status={p.status} locale={locale} />
+        <Status status={p.status} locale={locale} kind="payment" />
       </PageHeading>
       <dl className="detail-grid">
         <div>
@@ -136,12 +168,20 @@ export default async function RecordPage({
           <dt>{d.program}</dt>
           <dd>
             <Link href={`/${locale}/programs/${p.programCode}`}>
-              {p.programName}
+              {programName(locale, p.programCode, p.programName)}
             </Link>
           </dd>
         </div>
         <div>
-          <dt>{d.amount}</dt>
+          <dt>{d.grossAmount}</dt>
+          <dd>{money(p.grossAmount, locale)}</dd>
+        </div>
+        <div>
+          <dt>{d.discountAmount}</dt>
+          <dd>{money(p.discountAmount, locale)}</dd>
+        </div>
+        <div>
+          <dt>{d.netAmount}</dt>
           <dd>{money(p.amount, locale)}</dd>
         </div>
         <div>
@@ -153,8 +193,8 @@ export default async function RecordPage({
           <dd>{p.state}</dd>
         </div>
         <div>
-          <dt>{d.paid}</dt>
-          <dd>{p.paidAt ? date(p.paidAt, locale) : "—"}</dd>
+          <dt>{d.paymentType}</dt>
+          <dd>{legacyCodeLabel(locale, "payment-type", p.type)}</dd>
         </div>
       </dl>
     </>
