@@ -55,12 +55,14 @@ The API signing token lives in a short-lived HttpOnly, SameSite=Lax, Secure cook
 at the browser boundary. The Next.js server supplies the bearer token to Spring
 Security. API authorization does not rely on cookie presence or hidden buttons.
 
-## Daily 07:00 startup
+## Daily availability from 07:00
 
 The shared Azure Automation runbook `Start-SifapWorkshopMorning` starts this
-application VM and the legacy application VM every day at **07:00
-America/Sao_Paulo**, including weekends. The nightly MCAPS shutdown is preserved.
-Startup is bounded to the morning window; no always-on watchdog is installed.
+application VM and the legacy application VM every day at **06:30
+America/Sao_Paulo**, including weekends, so both systems can be ready **by 07:00**.
+The nightly MCAPS shutdown is preserved. Scheduled startup is bounded to
+06:30-08:00; no always-on watchdog is installed. The schedule retains the historical
+Azure resource name `sifap-morning-0700`, but its actual trigger time is 06:30.
 
 Its schedule and minimal VM-scoped identity permissions are owned by the existing
 [legacy morning-start module](https://github.com/workshop-gbb/datacorp-sifap-legacy/tree/develop/infra/morning-start).
@@ -69,11 +71,24 @@ which checks the persisted PostgreSQL database with `SELECT 1`, container health
 Spring readiness and frontend readiness. No financial data or credentials are logged.
 
 The job reports success only after both systems and databases are ready and their
-public HTTPS probes pass. The 07:00 schedule is the trigger time, not a promise
-that VM boot completes instantaneously. Failures/timeouts fail the Automation job.
+public HTTPS probes pass. Each target has an independent 11-minute deadline within
+the overall 25-minute budget. Managed Run Command execution status, exit code and
+unique, expiring invocation markers prevent pending ARM provisioning or stale
+results from being mistaken for application readiness. Failures/timeouts fail the
+Automation job without skipping the other target.
 
 Operators can run `ValidateOnly` at any time without starting a stopped VM or
 restarting containers. The guest script receives `--check-only` in this mode.
+
+The morning schedule alone does not keep the systems up all day. Guest shutdown
+history and Resource Health show both machines stopping cleanly mid-day with no
+Azure `deallocate` operation, shortly after automatic security patching completes.
+The shared `sifap-daytime-availability` schedule therefore runs the same runbook
+hourly in `Daytime` mode: between **07:00 and 19:00 America/Sao_Paulo** it restarts
+a stopped environment and re-runs the same readiness checks. Outside that window it
+exits without acting, so the nightly shutdown and corporate security policies stay
+intact. Automatic patching is intentionally not moved to a night window, because
+the VMs are deallocated overnight and would stop receiving security updates.
 
 ## Local verification
 
@@ -154,3 +169,9 @@ volumes to troubleshoot an application failure. A multi-operator production
 deployment additionally needs an approved remote Terraform backend, scheduled
 restore-tested database backups, enterprise identity federation and a
 high-availability hosting design.
+
+## References
+
+- [Azure Automation schedules](https://learn.microsoft.com/azure/automation/shared-resources/schedules)
+- [Managed Run Command for Linux](https://learn.microsoft.com/azure/virtual-machines/linux/run-command-managed)
+- [Azure Resource Health](https://learn.microsoft.com/azure/service-health/resource-health-overview)
