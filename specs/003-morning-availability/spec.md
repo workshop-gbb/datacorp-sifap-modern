@@ -20,7 +20,7 @@ existing running services without starting a stopped VM or restarting a service.
 - `source_legacy:` [GREENFIELD] Operators need a safe on-demand validator outside the scheduled startup window.
 - Acceptance: managed identity with VM-scoped read/start and managed Run Command read/write actions; expired commands cannot replay startup; no operator role grant, logged credentials or MCAPS policy changes.
 
-**REQ-116** — When either SIFAP environment stops during working hours, the
+**REQ-117** — When either SIFAP environment stops during working hours, the
 automation shall restart and revalidate it within the hour, and shall never
 request a start outside 07:00-19:00 America/Sao_Paulo.
 
