@@ -21,11 +21,11 @@ existing running services without starting a stopped VM or restarting a service.
 - Acceptance: managed identity with VM-scoped read/start and managed Run Command read/write actions; expired commands cannot replay startup; no operator role grant, logged credentials or MCAPS policy changes.
 
 **REQ-117** — When either SIFAP environment stops during working hours, the
-automation shall restart and revalidate it within the hour, and shall never
+automation shall restart and revalidate it within 15 minutes, and shall never
 request a start outside 07:00-19:00 America/Sao_Paulo.
 
-- `source_legacy:` [GREENFIELD] Verified on 9-15 Sep 2026: both VMs boot near 07:00 and then shut down cleanly mid-day, staying deallocated for the rest of the day.
-- Acceptance: hourly schedule bound to the same runbook in Daytime mode; a healthy public endpoint avoids an unnecessary guest command; outside the window the job exits successfully without starting a VM; the nightly shutdown and automatic security patching are unchanged.
+- `source_legacy:` [GREENFIELD] Verified on 9-17 Sep 2026: both VMs boot near 07:00 and then shut down cleanly mid-day, staying deallocated for the rest of the day. On 17 Sep the modern host shut down at 14:04, four minutes after an hourly check had passed.
+- Acceptance: four offset schedules bound to the same runbook in Daytime mode give a 15-minute cadence; a healthy public endpoint avoids an unnecessary guest command; outside the window the job exits successfully without starting a VM; the nightly shutdown stays intact and the MCAPS-governed patch window is not modified.
 
 ## References
 

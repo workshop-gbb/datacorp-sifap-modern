@@ -105,14 +105,18 @@ Operators can run `ValidateOnly` at any time without starting a stopped VM or
 restarting containers. The guest script receives `--check-only` in this mode.
 
 The morning schedule alone does not keep the systems up all day. Guest shutdown
-history and Resource Health show both machines stopping cleanly mid-day with no
-Azure `deallocate` operation, shortly after automatic security patching completes.
-The shared `sifap-daytime-availability` schedule therefore runs the same runbook
-hourly in `Daytime` mode: between **07:00 and 19:00 America/Sao_Paulo** it restarts
-a stopped environment and re-runs the same readiness checks. Outside that window it
-exits without acting, so the nightly shutdown and corporate security policies stay
-intact. Automatic patching is intentionally not moved to a night window, because
-the VMs are deallocated overnight and would stop receiving security updates.
+history shows both machines stopping cleanly mid-day with no Azure `deallocate`
+operation, minutes after the guest patch extension finishes. The four
+`sifap-daytime-availability-*` schedules therefore run the same runbook every 15
+minutes in `Daytime` mode: between **07:00 and 19:00 America/Sao_Paulo** they
+restart a stopped environment and re-run the same readiness checks. Outside that
+window they exit without acting, so the nightly shutdown stays intact.
+
+The patch window itself is **not** ours to move: both VMs are assigned to MCAPS
+maintenance configurations in the governed `mcapsgov-updatemanagementcenter`
+subscription. Do not create a competing configuration or detach those assignments;
+changing the patch schedule requires the policy owner. Recovery latency is bounded
+by the 15-minute check instead.
 
 ## Local verification
 
